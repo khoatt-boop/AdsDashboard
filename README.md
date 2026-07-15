@@ -6,6 +6,10 @@ Static HTML dashboard for tracking CPD ads performance.
 
 Open `index.html` directly in a browser.
 
+Default password: `cpd2026`
+
+To change it, update `DASHBOARD_PASSWORD_HASH` in `password.js` with the SHA-256 hash of your new password.
+
 ## Deploy with GitHub Pages
 
 1. Push this folder to a GitHub repository.
