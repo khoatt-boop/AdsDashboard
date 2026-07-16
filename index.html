@@ -205,7 +205,7 @@ th.sactive{background:#0f1424;}
   <span id="divInfo" style="margin-left:auto;font-size:8px;color:#c2554e;font-style:italic;font-weight:700;"></span>
 </div>
 
-<a id="fbBtn" href="#" target="_blank" rel="noopener" title="Feedback về dashboard — link Google Sheet">💬 FEEDBACK HERE!!!</a>
+<a id="fbBtn" href="https://docs.google.com/spreadsheets/d/1n9pTwSdKItzT7XKsfmCfjKD30VguvccT/edit?gid=1779161509#gid=1779161509" target="_blank" rel="noopener" title="Góp ý / request cho dashboard — mở Google Sheet feedback">💬 FEEDBACK HERE!!!</a>
 
 <div id="bmBar">
   <span style="font-weight:700;color:#475569;">🔖 Bookmark</span>
@@ -1097,8 +1097,9 @@ function buildRoi(){
       const call=(inc.length?' · tăng: '+inc.join(', '):'')+(dec.length?' · giảm/kiểm soát: '+dec.join(', '):'');
       const d7s=d7D==null?'':` · 7d NMV <span style="color:${d7D>=0?'#16a34a':'#dc2626'};font-weight:700;">${d7D>=0?'▲':'▼'}${Math.abs(Math.round(d7D*100))}%</span>`;
       const dvc=dv===0?'#0f766e':'#7c3aed';
-      secs.push(`<div><div class="dvhead" style="border-left:3px solid ${dvc};">`
-        +`<span class="dvname" style="color:${dvc};">${D.divisions[dv]}</span> — RR <b>${Math.round(rrD*100)}%</b> · TACOS <b>${fPct(tacD,1)}</b>/${fPct(tacTD,1)}${d7s} → <b>${rec}</b><span style="color:#6b7280;"><i>${call}</i></span></div>${lines}</div>`);
+      // header division trai het chieu ngang, cac dong brand ben duoi tu chay 2 cot -> khong bi trong
+      secs.push(`<div class="dvhead" style="grid-column:1/-1;border-left:3px solid ${dvc};">`
+        +`<span class="dvname" style="color:${dvc};">${D.divisions[dv]}</span> — RR <b>${Math.round(rrD*100)}%</b> · TACOS <b>${fPct(tacD,1)}</b>/${fPct(tacTD,1)}${d7s} → <b>${rec}</b><span style="color:#6b7280;"><i>${call}</i></span></div>${lines}`);
     });
     const rng=dAll.length>=14?` (${ddmm(dAll.slice(-7)[0])}–${ddmm(dAll[dAll.length-1])} vs ${ddmm(dAll.slice(-14,-7)[0])}–${ddmm(dAll.slice(-14,-7)[6])})`:'';
     box.innerHTML=`<div class="ntt">📌 NHẬN XÉT PFM &amp; TIẾN ĐỘ THEO BRAND — MTD · RUN-RATE · TACOS · TREND 7D</div>`
