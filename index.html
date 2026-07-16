@@ -29,11 +29,16 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1f36;fo
 .tab-i:hover{background:#FDECEB;border-color:#EE3124;color:#EE3124;}
 .clr{font-size:8.5px;color:#EE3124;cursor:pointer;margin-left:8px;font-weight:700;}
 .clr:hover{text-decoration:underline;}
-.kpi-row{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-bottom:7px;}
-.kpi{background:#fff;border-radius:5px;padding:7px 10px;box-shadow:0 1px 3px rgba(0,0,0,.08);}
-.kpi .lb{font-size:8.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
-.kpi .vl{font-size:18px;font-weight:800;color:#1a1f36;line-height:1.2;margin:1px 0;}
-.kpi .s1,.kpi .s2{font-size:8.5px;color:#aaa;}
+.kpi-row{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:7px;}
+.kpi{background:#fff;border-radius:6px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.kpi .lb{font-size:9px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.kpi .vl{font-size:20px;font-weight:800;color:#1a1f36;line-height:1.25;margin:2px 0;}
+.kpi .s1,.kpi .s2{font-size:9px;color:#aaa;}
+/* 2 card target (%Loading + %Dat tien do): tone do Ecomobi nhat, dat ke 3 card den */
+.kpi.tg{background:#FDECEB;border:1px solid #f6c3bf;position:relative;overflow:hidden;}
+.kpi.tg::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#EE3124;}
+.kpi.tg .lb{color:#EE3124;}
+.kpi.tg .s1,.kpi.tg .s2{color:#b3776f;}
 .kpi .vl.up{color:#22c55e;}
 .kpi .vl.dn{color:#ef4444;}
 .kpi .vl.neu{color:#f59e0b;}
@@ -42,7 +47,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1f36;fo
 .kpi.hl{background:#1a1f36;box-shadow:0 2px 8px rgba(26,31,54,.35);position:relative;overflow:hidden;}
 .kpi.hl::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#f59e0b;}
 .kpi.hl .lb{color:#fcd34d;}
-.kpi.hl .vl{color:#fff;font-size:22px;}
+.kpi.hl .vl{color:#fff;font-size:24px;}
 .kpi.hl .s1,.kpi.hl .s2{color:#94a3b8;}
 .kpi.hl .s1 strong,.kpi.hl .s2 strong{color:#e2e8f0;}
 .up{color:#22c55e;font-weight:700;}
@@ -68,7 +73,17 @@ tr.tot td:first-child{text-align:left;}
 .wk-table td.spk svg{margin:0 auto;}
 .divbar{background:#FDF1F0;border:1px solid #f8d7d4;border-top:none;border-radius:0 0 5px 5px;padding:5px 12px;margin-bottom:7px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .divlbl{font-size:7.5px;color:#c2554e;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-right:4px;}
-.dtab{border:1px solid #e5c5c2;background:#fff;color:#6b7280;border-radius:12px;padding:4px 13px;font-size:11px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;font-family:inherit;}
+.dtab{border:1px solid #e5c5c2;background:#fff;color:#6b7280;border-radius:13px;padding:5px 16px;font-size:13.5px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;font-family:inherit;}
+.dtab .dsub{font-size:7.5px;}
+/* callout chi vao tab CPD/LDB */
+.fbhere{display:inline-flex;align-items:center;color:#EE3124;font-weight:900;font-size:12.5px;letter-spacing:.5px;margin-left:6px;animation:fbnudge 1.1s ease-in-out infinite;white-space:nowrap;}
+@keyframes fbnudge{0%,100%{transform:translateX(0);}50%{transform:translateX(-7px);}}
+/* nut Feedback noi goc phai duoi */
+#fbBtn{position:fixed;right:14px;bottom:14px;z-index:1500;background:#EE3124;color:#fff;font-weight:900;font-size:12px;letter-spacing:.4px;border-radius:999px;padding:10px 18px;text-decoration:none;box-shadow:0 4px 16px rgba(238,49,36,.45);animation:fbpulse 1.6s ease-in-out infinite;font-family:'Segoe UI',Arial,sans-serif;}
+#fbBtn:hover{background:#c9241a;animation:none;}
+@keyframes fbpulse{0%,100%{transform:scale(1);box-shadow:0 4px 16px rgba(238,49,36,.45);}50%{transform:scale(1.06);box-shadow:0 6px 22px rgba(238,49,36,.6);}}
+body.auth-locked #fbBtn{display:none;}
+@media print{#fbBtn,.fbhere{display:none !important;}}
 .dtab:hover{background:#FDECEB;border-color:#EE3124;color:#EE3124;}
 .dtab.on{background:#EE3124;border-color:#EE3124;color:#fff;}
 .dtab .dsub{font-size:7px;font-weight:600;opacity:.75;text-transform:none;}
@@ -178,8 +193,11 @@ th.sactive{background:#0f1424;}
   <button class="dtab" id="dvAll" onclick="setDiv('All')">Tất cả</button>
   <button class="dtab" id="dv0" onclick="setDiv('0')">CPD<span class="dsub">Maybelline · Garnier · L'Oréal Paris · 3CE</span></button>
   <button class="dtab" id="dv1" onclick="setDiv('1')">LDB<span class="dsub">CeraVe · La Roche-Posay</span></button>
-  <span id="divInfo" style="margin-left:auto;font-size:8px;color:#94a3b8;"></span>
+  <span class="fbhere">⬅️ FILTER BRAND HERE!!!</span>
+  <span id="divInfo" style="margin-left:auto;font-size:8px;color:#c2554e;"></span>
 </div>
+
+<a id="fbBtn" href="#" target="_blank" rel="noopener" title="Feedback về dashboard — link Google Sheet">💬 FEEDBACK HERE!!!</a>
 
 <div id="bmBar">
   <span style="font-weight:700;color:#475569;">🔖 Bookmark</span>
@@ -1095,21 +1113,22 @@ function render(){
     tgtToDate+=b.t[m].nmvT*(tgtDaysIn(m)/monthDays[m]);         // target chia theo số ngày trong bộ lọc
   }}); });
   const loading=tgtNmv?A.nmv/tgtNmv:null, rrPct=tgtToDate?A.nmv/tgtToDate:null;
+  // thu tu: 3 card den (tru cot) -> 2 card target (do nhat) -> 3 card trang ra ngoai cung
   const kpis=[
     {hl:1,lb:'NMV Total',vl:fC(A.nmv),s1:'Orders: <strong>'+fInt(A.o)+'</strong>',s2:Ab?('%vs LM: '+momHtml(A.nmv,Ab.nmv)):''},
-    {lb:'NMV Ads',vl:fC(A.nmvAds),s1:'Ads <strong>'+fPct(pctAds,1)+'</strong> · Organic <strong>'+fPct(1-pctAds,1)+'</strong>',s2:Ab?('%vs LM: '+momHtml(A.nmvAds,Ab.nmvAds)):''},
     {hl:1,lb:'Spend Ads',vl:fC(A.cost),s1:'CPO: <strong>'+fInt(cpo)+'</strong>',s2:Ab?('%vs LM: '+momHtml(A.cost,Ab.cost,true)):''},
-    {lb:'ACOS NMV',vl:fPct(acos,2),s1:'Spend Ads / NMV Ads',s2:Ab?('%vs LM: '+momHtml(acos,Ab.cost/Ab.nmvAds,true)):''},
     {hl:1,lb:'TACOS NMV',vl:fPct(tacos,2),s1:'Spend / NMV Total',s2:Ab?('%vs LM: '+momHtml(tacos,Ab.cost/Ab.nmv,true)):''},
-    {lb:'%Loading '+perLbl,vl:fPct(loading,1),vc:(loading==null?'':(loading>=pace?'up':(loading>=pace*0.75?'neu':'dn'))),
+    {tg:1,lb:'%Loading '+perLbl,vl:fPct(loading,1),vc:(loading==null?'':(loading>=pace?'up':(loading>=pace*0.75?'neu':'dn'))),
       s1:'NMV / Target '+perLbl,s2:'<span class="mtdchip" title="Kỳ đã trôi qua '+fPct(pace,1)+' — %Loading ≥ mức này là bám kịp target">MTD: '+fPct(pace,1)+'</span>'},
-    {lb:'%Đạt tiến độ',vl:fPct(rrPct,1),vc:color10(rrPct),
+    {tg:1,lb:'%Đạt tiến độ',vl:fPct(rrPct,1),vc:color10(rrPct),
       s1:'Actual ÷ Target đến ngày',s2:'Target đến ngày: <strong>'+fC(tgtToDate)+'</strong>'},
+    {lb:'NMV Ads',vl:fC(A.nmvAds),s1:'Ads <strong>'+fPct(pctAds,1)+'</strong> · Organic <strong>'+fPct(1-pctAds,1)+'</strong>',s2:Ab?('%vs LM: '+momHtml(A.nmvAds,Ab.nmvAds)):''},
+    {lb:'ACOS NMV',vl:fPct(acos,2),s1:'Spend Ads / NMV Ads',s2:Ab?('%vs LM: '+momHtml(acos,Ab.cost/Ab.nmvAds,true)):''},
     {lb:'CPM',vl:fInt(cpm)+(Ab?' <span style="font-size:9.5px;vertical-align:2px;">'+momHtml(cpm,Ab.cost/Ab.imp*1000,true)+'</span>':''),
       s1:'CTR: <strong>'+fPct(ctr,2)+'</strong>'+(Ab?' '+momHtml(ctr,Ab.clk/Ab.imp):'')+' · CVR: <strong>'+fPct(cvr,2)+'</strong>'+(Ab?' '+momHtml(cvr,Ab.conv/Ab.clk):''),
       s2:'CPC: <strong>'+fInt(cpc)+'</strong>'+(Ab?' '+momHtml(cpc,Ab.cost/Ab.clk,true):'')+' · Impr: <strong>'+fC(A.imp)+'</strong>'+(Ab?' '+momHtml(A.imp,Ab.imp):'')}
   ];
-  $('kpiRow').innerHTML=kpis.map(k=>`<div class="kpi${k.hl?' hl':''}"><div class="lb">${k.lb}</div><div class="vl ${k.vc||''}">${k.vl}</div><div class="s1">${k.s1}</div><div class="s2">${k.s2}</div></div>`).join('');
+  $('kpiRow').innerHTML=kpis.map(k=>`<div class="kpi${k.hl?' hl':(k.tg?' tg':'')}"><div class="lb">${k.lb}</div><div class="vl ${k.vc||''}">${k.vl}</div><div class="s1">${k.s1}</div><div class="s2">${k.s2}</div></div>`).join('');
 
   // group by date
   const dates=[...new Set(rows.map(r=>r[0]))].sort();
