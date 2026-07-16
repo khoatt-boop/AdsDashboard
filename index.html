@@ -1114,9 +1114,11 @@ function buildRoi(){
       +secs.join('')
       +`<div class="ntsrc">Ghi chú: 7d = so sánh 7 ngày dữ liệu gần nhất với 7 ngày liền trước${rng}, không phụ thuộc bộ lọc ngày.</div>`;
   })();
-  const dts=[...new Set(rws.map(r=>r[0]))].sort();
+  // bảng brand giữ đủ 6 dòng (kiểu PBI) nhưng CHART theo ngày phải chạy theo cross-filter brand
+  const rwsC=(cf.shop==null)?rws:rws.filter(r=>+r[1]===+cf.shop);
+  const dts=[...new Set(rwsC.map(r=>r[0]))].sort();
   const bd={}; dts.forEach(d=>bd[d]={nmv:0,cost:0});
-  rws.forEach(r=>{ bd[r[0]].nmv+=r[6]; bd[r[0]].cost+=r[7]; });
+  rwsC.forEach(r=>{ bd[r[0]].nmv+=r[6]; bd[r[0]].cost+=r[7]; });
   mk('cRoi',{data:{labels:dts.map(dLbl),datasets:[
     {type:'bar',label:'NMV Total',data:dts.map(d=>bd[d].nmv),backgroundColor:'#bfdbfe',yAxisID:'y'},
     {type:'line',label:'TACOS Total %',data:dts.map(d=>bd[d].nmv?bd[d].cost/bd[d].nmv*100:null),borderColor:'#f59e0b',borderWidth:2,pointRadius:1.5,tension:.4,yAxisID:'y1'}
