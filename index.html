@@ -666,6 +666,20 @@ const brandTargets=[
   {code:'LRP', pic:'Lê Thị Thục Nhiên', match:'roche',     t:{'2026-06':{nmvT:644000000, adsT:62339200}, '2026-07':{nmvT:703000000, adsT:66082000}}}
 ];
 brandTargets.forEach(b=>{ b.shop=D.shops.findIndex(s=>s.toLowerCase().includes(b.match)); });
+// ---- logo brand: badge inline tu chua, khong can file anh ----
+const BLOGO={
+  MNY:{bg:'#111111',fg:'#ffffff',t:'M'},
+  '3CE':{bg:'#2d2d2d',fg:'#ffffff',t:'3CE',fs:.34},
+  OAP:{bg:'#000000',fg:'#e7c675',t:"L'O",fs:.38},
+  GNR:{bg:'#65a30d',fg:'#ffffff',t:'G'},
+  CRV:{bg:'#2567af',fg:'#ffffff',t:'C'},
+  LRP:{bg:'#0d4f8b',fg:'#ffffff',t:'LRP',fs:.32}
+};
+function brandLogo(si,size=13){
+  const b=brandTargets.find(x=>x.shop===si); if(!b||!BLOGO[b.code]) return '';
+  const L=BLOGO[b.code], fs=Math.round(size*(L.fs||0.6));
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:3px;background:${L.bg};color:${L.fg};font-size:${fs}px;font-weight:800;line-height:1;vertical-align:-2.5px;margin-right:4px;font-family:'Segoe UI',Arial,sans-serif;flex-shrink:0;">${L.t}</span>`;
+}
 const monthDays={'2026-06':30,'2026-07':31};
 // TACOS target của 1 brand theo kỳ đang chọn (Ads Target / NMV Target)
 function brandTacTarget(si){ const b=brandTargets.find(x=>x.shop===si); if(!b) return null;
@@ -722,14 +736,14 @@ function buildTargetTable(tblId,noteId,mode){
     if(!nmvT){
       noTgt++;
       const nCol=isPr?13:11;
-      h+=`<tr style="opacity:.75;"><td>${D.shops[b.shop]}</td><td>${picChip(b)}</td>`
+      h+=`<tr style="opacity:.75;"><td>${brandLogo(b.shop)}${D.shops[b.shop]}</td><td>${picChip(b)}</td>`
         +`<td colspan="${nCol-2}" style="text-align:left;color:#b45309;background:#fffbeb;">⏳ Chưa nhập target — Actual: NMV <b>${fInt(nmvA)}</b> · Ads Cost <b>${fInt(adsA)}</b> · TACOS <b>${fPct(adsA/nmvA,2)}</b></td></tr>`;
       return;
     }
     T.nmvT+=nmvT;T.adsT+=adsT;T.nmvA+=nmvA;T.adsA+=adsA;
     const pn=nmvA/nmvT, pa=adsA/adsT, tacT=adsT/nmvT, tacA=adsA/nmvA, ptac=tacT/tacA;
     const ref=(mode==='mtd')?pace:1, tacR=tacA/tacT;
-    h+=`<tr><td>${D.shops[b.shop]}</td><td>${picChip(b)}</td><td>${fInt(nmvT)}</td><td>${fInt(nmvA)}</td><td style="${gradAround(pn,ref,0.10)}">${fPct(pn,1)}</td><td>${fInt(adsT)}</td><td>${fInt(adsA)}</td><td style="${gradAround(pa,ref,0.10)}">${fPct(pa,1)}</td><td>${fPct(tacT,1)}</td><td>${fPct(tacA,1)}</td><td style="${gradAround(ptac,1,0.10)}">${fPct(ptac,1)}</td>`
+    h+=`<tr><td>${brandLogo(b.shop)}${D.shops[b.shop]}</td><td>${picChip(b)}</td><td>${fInt(nmvT)}</td><td>${fInt(nmvA)}</td><td style="${gradAround(pn,ref,0.10)}">${fPct(pn,1)}</td><td>${fInt(adsT)}</td><td>${fInt(adsA)}</td><td style="${gradAround(pa,ref,0.10)}">${fPct(pa,1)}</td><td>${fPct(tacT,1)}</td><td>${fPct(tacA,1)}</td><td style="${gradAround(ptac,1,0.10)}">${fPct(ptac,1)}</td>`
       + (isPr?`<td style="${bandStyle(tacBand(tacR))}">${fPct(tacR,1)}</td>`+actCell(pn,tacR):'') + `</tr>`;
   });
   const pnT=T.nmvA/T.nmvT, paT=T.adsA/T.adsT, tacTT=T.adsT/T.nmvT, tacAT=T.adsA/T.nmvA, ptacT=tacTT/tacAT;
@@ -798,7 +812,7 @@ function buildWeeks(){
     ];
     spec.forEach((rs,ri)=>{
       const lab = rs.clr ? `<span class="mchip" style="background:${rs.clr};">${rs.lb}</span>` : rs.lb;
-      h+='<tr>'+(ri===0?`<td rowspan="7" class="blbl">${D.shops[s]}${divTag(s)}</td>`:'')
+      h+='<tr>'+(ri===0?`<td rowspan="7" class="blbl">${brandLogo(+s)}${D.shops[s]}${divTag(s)}</td>`:'')
         +`<td class="mlbl">${lab}</td>`
         +rs.cells.map(c=>`<td>${c}</td>`).join('')
         +`<td class="spk">${rs.clr?spark(rs.raw,rs.clr,rs.fmt):''}</td>`+'</tr>'; });
@@ -898,7 +912,7 @@ function buildPie(){
       responsive:true,maintainAspectRatio:false,animation:false}});
   $('pieLeg').innerHTML=es.map((e,i)=>
     `<div class="pl" onclick="toggleCf('shop',${e[0]})" title="Click để cross-filter" style="cursor:pointer;${cf.shop===+e[0]?'background:#fde68a;font-weight:800;':''}">`
-    +`<span class="dot" style="background:${PIECLR[i%PIECLR.length]}"></span>${esc(D.shops[e[0]])}`
+    +`<span class="dot" style="background:${PIECLR[i%PIECLR.length]}"></span>${brandLogo(+e[0],11)}${esc(D.shops[e[0]])}`
     +`<b>${fC(e[1])}</b><span style="color:#888;">(${tot?(e[1]/tot*100).toFixed(2):0}%)</span></div>`).join('');
 }
 
@@ -1016,7 +1030,7 @@ function buildRoi(){
   es.forEach(([k,o])=>{ T.nmv+=o.nmv;T.cost+=o.cost;T.nmvAds+=o.nmvAds;
     const roi=o.nmv/o.cost, ro=o.nmvAds/o.cost, tac=o.cost/o.nmv;
     const sel=cf.shop===+k?' cfsel':'';
-    h+=`<tr class="clk${sel}" onclick="toggleCf('shop',${k})"><td>${D.shops[k]}</td><td style="${gradAmber(o.nmv,rNmv[0],rNmv[1])}">${fInt(o.nmv)}</td><td style="${gradAmber(o.cost,rSpd[0],rSpd[1])}">${fInt(o.cost)}</td><td>${fInt(o.nmvAds)}</td><td style="${gradMM(roi,aRoi[0],aRoi[1],1)}">${fR(roi)}</td><td style="${gradMM(ro,aRoas[0],aRoas[1],1)}">${fR(ro)}</td><td style="${gradMM(tac,aTac[0],aTac[1],-1)}">${fPct(tac,2)}</td></tr>`; });
+    h+=`<tr class="clk${sel}" onclick="toggleCf('shop',${k})"><td>${brandLogo(+k)}${D.shops[k]}</td><td style="${gradAmber(o.nmv,rNmv[0],rNmv[1])}">${fInt(o.nmv)}</td><td style="${gradAmber(o.cost,rSpd[0],rSpd[1])}">${fInt(o.cost)}</td><td>${fInt(o.nmvAds)}</td><td style="${gradMM(roi,aRoi[0],aRoi[1],1)}">${fR(roi)}</td><td style="${gradMM(ro,aRoas[0],aRoas[1],1)}">${fR(ro)}</td><td style="${gradMM(tac,aTac[0],aTac[1],-1)}">${fPct(tac,2)}</td></tr>`; });
   h+=`<tr class="tot"><td>Total</td><td>${fInt(T.nmv)}</td><td>${fInt(T.cost)}</td><td>${fInt(T.nmvAds)}</td><td>${fR(T.nmv/T.cost)}</td><td>${fR(T.nmvAds/T.cost)}</td><td>${fPct(T.cost/T.nmv,2)}</td></tr></tbody>`;
   $('tblRoi').innerHTML=h;
   $('roiNote').textContent='ROI = NMV Total / Ads Cost · ROAS = NMV Ads / Ads Cost · TACOS Total = Ads Cost / NMV Total · click dòng để cross-filter brand';
@@ -1063,7 +1077,7 @@ function buildRoi(){
         const tip = rr>=0.90 ? (tacHi?'giữ NMV, tối ưu cost':(tacOk?'duy trì, có thể scale':'theo dõi cost'))
                              : (tacHi?'kiểm soát spend gấp':(tacOk?'còn room đẩy ads':'đẩy NMV, giữ cost'));
         const tc = tacHi?'#dc2626':(tacOk?'#16a34a':'#b45309');
-        lines+=`<div style="padding-left:9px;margin-top:2px;">${ic} <b>${b.code}</b> ${st} — MTD <b>${Math.round(mtd*100)}%</b> · RR <b>${Math.round(rr*100)}%</b> · TACOS <span style="color:${tc};font-weight:700;">${fPct(tacA,1)}</span>/${fPct(tacT,1)} · ${trendHtml(x)} → <i>${tip}</i></div>`;
+        lines+=`<div style="padding-left:9px;margin-top:2px;">${ic} ${brandLogo(b.shop,11)}<b>${b.code}</b> ${st} — MTD <b>${Math.round(mtd*100)}%</b> · RR <b>${Math.round(rr*100)}%</b> · TACOS <span style="color:${tc};font-weight:700;">${fPct(tacA,1)}</span>/${fPct(tacT,1)} · ${trendHtml(x)} → <i>${tip}</i></div>`;
       });
       if(!lines) return;
       const rrD=agg.nmv/agg.tgtTD, tacD=agg.cost/agg.nmv, tacTD=agg.adsTgt/agg.nmvTgt;
