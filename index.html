@@ -97,6 +97,20 @@ tr.tot td:first-child{text-align:left;}
 /* nut Feedback noi goc phai duoi */
 #fbBtn{position:fixed;right:14px;bottom:14px;z-index:1500;background:#EE3124;color:#fff;font-weight:900;font-size:12px;letter-spacing:.4px;border-radius:999px;padding:10px 18px;text-decoration:none;box-shadow:0 4px 16px rgba(238,49,36,.45);animation:fbpulse 1.6s ease-in-out infinite;font-family:'Segoe UI',Arial,sans-serif;}
 #fbBtn:hover{background:#c9241a;animation:none;}
+/* nut Huong dan doc Dashboard - noi ben trai, cung font/style voi Feedback */
+#gdBtn{position:fixed;left:14px;bottom:14px;z-index:1500;background:#EE3124;color:#fff;font-weight:900;font-size:12px;letter-spacing:.4px;border-radius:999px;padding:10px 18px;cursor:pointer;box-shadow:0 4px 16px rgba(238,49,36,.45);font-family:'Segoe UI',Arial,sans-serif;user-select:none;display:flex;align-items:center;gap:7px;}
+#gdBtn:hover{background:#c9241a;}
+#gdBtn .plus{font-size:17px;font-weight:900;line-height:1;}
+#gdPanel{display:none;position:fixed;left:14px;bottom:62px;z-index:1600;width:400px;max-width:calc(100vw - 28px);max-height:76vh;overflow:auto;background:#fffdf6;border:1.5px dashed #f2b09a;border-radius:8px;box-shadow:0 10px 34px rgba(0,0,0,.22);padding:12px 15px;font-size:9.5px;line-height:1.65;color:#374151;font-family:'Segoe UI',Arial,sans-serif;}
+#gdPanel.open{display:block;}
+#gdPanel h3{font-family:Consolas,'Courier New',monospace;font-size:10.5px;font-weight:700;letter-spacing:1.2px;color:#c2410c;border-bottom:1px dashed #f2cdb4;padding-bottom:5px;margin-bottom:7px;}
+#gdPanel h4{font-size:9.5px;font-weight:800;color:#EE3124;margin:9px 0 3px;}
+#gdPanel ul{margin:0;padding-left:15px;}
+#gdPanel li{margin-bottom:2px;}
+#gdPanel .gdx{position:absolute;top:8px;right:11px;cursor:pointer;color:#9ca3af;font-weight:800;font-size:13px;}
+#gdPanel .gdx:hover{color:#EE3124;}
+body.auth-locked #gdBtn,body.auth-locked #gdPanel{display:none;}
+@media print{#gdBtn,#gdPanel{display:none !important;}}
 @keyframes fbpulse{0%,100%{transform:scale(1);box-shadow:0 4px 16px rgba(238,49,36,.45);}50%{transform:scale(1.06);box-shadow:0 6px 22px rgba(238,49,36,.6);}}
 body.auth-locked #fbBtn{display:none;}
 @media print{#fbBtn,.fbhere{display:none !important;}}
@@ -214,6 +228,55 @@ th.sactive{background:#0f1424;}
 </div>
 
 <a id="fbBtn" href="https://docs.google.com/spreadsheets/d/1n9pTwSdKItzT7XKsfmCfjKD30VguvccT/edit?gid=1779161509#gid=1779161509" target="_blank" rel="noopener" title="Góp ý / request cho dashboard — mở Google Sheet feedback">💬 FEEDBACK HERE!!!</a>
+
+<div id="gdBtn" onclick="gdToggle()" title="Cách đọc số liệu, thao tác filter, ý nghĩa màu sắc"><span class="plus" id="gdPlus">＋</span> HƯỚNG DẪN ĐỌC DASHBOARD</div>
+<div id="gdPanel">
+  <span class="gdx" onclick="gdToggle()">✕</span>
+  <h3>📖 HƯỚNG DẪN ĐỌC DASHBOARD</h3>
+
+  <h4>Dữ liệu lấy từ đâu?</h4>
+  Chi phí &amp; chỉ số ads (Spend, Impression, Click, NMV Ads) từ <b>Raw_Ads</b> — nguồn chuẩn khớp file target. NMV Total, Product, Creator, Tier từ <b>Raw_Video Admin</b>. <b>NMV Organic = NMV Total − NMV Ads.</b> Data tự cập nhật <b>9:30 sáng</b> hàng ngày (D-1); ngày thiếu một trong hai nguồn sẽ bị loại để số không lệch.
+
+  <h4>3 chỉ số quan trọng nhất (3 card đen)</h4>
+  <ul>
+    <li><b>NMV Total</b> — doanh thu net toàn kênh (đã gồm ads)</li>
+    <li><b>Spend Ads</b> — tổng tiền ads thực chi</li>
+    <li><b>TACOS</b> = Spend ÷ NMV Total — hiệu quả tổng thể, <i>càng thấp càng tốt</i>. (ACOS = Spend ÷ NMV Ads chỉ để xem tỉ trọng ads/organic)</li>
+  </ul>
+
+  <h4>2 card đỏ = tiến độ target</h4>
+  <ul>
+    <li><b>%Loading</b> = NMV lũy kế ÷ target <i>cả tháng</i> → so với chip đỏ <b>MTD</b> (% kỳ đã trôi): Loading ≥ MTD là bám kịp</li>
+    <li><b>%Đạt tiến độ</b> = NMV ÷ target <i>tính đến hôm nay</i> → ≥100% xanh, ±10% trắng, hụt sâu đỏ</li>
+  </ul>
+
+  <h4>Cách thao tác</h4>
+  <ul>
+    <li>Chọn tháng ở góc phải header · tab <b>CPD / LDB</b> xem riêng từng nhóm brand</li>
+    <li><b>Click 1 dòng bất kỳ</b> (Brand/Product/Creator/Angle) → toàn dashboard lọc theo, click lại để bỏ — như Power BI</li>
+    <li>Nút <b>⛶</b> trên mỗi chart/bảng → phóng to toàn màn hình (Esc thoát)</li>
+    <li><b>🔖 Bookmark</b> lưu bộ filter hay dùng, gắn ☆ để tự áp khi mở trang</li>
+  </ul>
+
+  <h4>Cách đọc màu &amp; ký hiệu</h4>
+  <ul>
+    <li>Nền <b>vàng/xanh dương</b> đậm dần = giá trị lớn dần (không mang nghĩa tốt/xấu)</li>
+    <li>Chữ/nền <b style="color:#16a34a;">xanh lá = tốt</b>, <b style="color:#dc2626;">đỏ = xấu</b> theo bản chất chỉ số (TACOS giảm = xanh, CTR tăng = xanh)</li>
+    <li><b>Suggest Action 1→4</b>: 1 = Urgent (kiểm soát spend gấp) → 4 = Potential (còn room scale)</li>
+    <li><b>⭐ 0.5–5 sao</b> = tiềm năng scale của Angle/KOC (hiệu quả + đà tăng + quy mô); "—" = chưa chạy ads</li>
+    <li>Note 📌 dưới bảng brand: nhận xét tự động MTD · Run-rate · trend 7 ngày + gợi ý budget</li>
+  </ul>
+
+  <div style="margin-top:8px;font-family:Consolas,'Courier New',monospace;color:#9ca3af;font-size:8px;border-top:1px dashed #f2cdb4;padding-top:4px;">Góp ý: bấm nút đỏ 💬 FEEDBACK HERE!!! góc phải dưới.</div>
+</div>
+<script>
+function gdToggle(){
+  const p=document.getElementById('gdPanel'), s=document.getElementById('gdPlus');
+  const open=!p.classList.contains('open');
+  p.classList.toggle('open',open);
+  s.textContent=open?'−':'＋';
+}
+</script>
 
 <div id="bmBar">
   <span style="font-weight:700;color:#475569;">🔖 Bookmark</span>
