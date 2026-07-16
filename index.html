@@ -30,6 +30,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1f36;fo
 .kpi .vl.up{color:#22c55e;}
 .kpi .vl.dn{color:#ef4444;}
 .kpi .vl.neu{color:#f59e0b;}
+.mtdchip{display:inline-block;background:#fee2e2;color:#dc2626;font-weight:800;border-radius:9px;padding:1px 8px;font-size:8.5px;letter-spacing:.2px;}
 /* 3 KPI trụ cột: NMV Total · Spend Ads · TACOS NMV */
 .kpi.hl{background:#1a1f36;box-shadow:0 2px 8px rgba(26,31,54,.35);position:relative;overflow:hidden;}
 .kpi.hl::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#f59e0b;}
@@ -1087,11 +1088,12 @@ function render(){
     {lb:'ACOS NMV',vl:fPct(acos,2),s1:'Spend Ads / NMV Ads',s2:Ab?('%vs LM: '+momHtml(acos,Ab.cost/Ab.nmvAds,true)):''},
     {hl:1,lb:'TACOS NMV',vl:fPct(tacos,2),s1:'Spend / NMV Total',s2:Ab?('%vs LM: '+momHtml(tacos,Ab.cost/Ab.nmv,true)):''},
     {lb:'%Loading '+perLbl,vl:fPct(loading,1),vc:(loading==null?'':(loading>=pace?'up':(loading>=pace*0.75?'neu':'dn'))),
-      s1:'NMV / Target '+perLbl,s2:'Pace kỳ: <strong>'+fPct(pace,1)+'</strong>'},
+      s1:'NMV / Target '+perLbl,s2:'<span class="mtdchip" title="Kỳ đã trôi qua '+fPct(pace,1)+' — %Loading ≥ mức này là bám kịp target">MTD: '+fPct(pace,1)+'</span>'},
     {lb:'%Đạt tiến độ',vl:fPct(rrPct,1),vc:color10(rrPct),
       s1:'Actual ÷ Target đến ngày',s2:'Target đến ngày: <strong>'+fC(tgtToDate)+'</strong>'},
-    {lb:'CPM',vl:fInt(cpm),s1:'CTR: <strong>'+fPct(ctr,2)+'</strong> · CVR: <strong>'+fPct(cvr,2)+'</strong>',
-      s2:'CPC: <strong>'+fInt(cpc)+'</strong> · Impr: <strong>'+fC(A.imp)+'</strong>'}
+    {lb:'CPM',vl:fInt(cpm)+(Ab?' <span style="font-size:9.5px;vertical-align:2px;">'+momHtml(cpm,Ab.cost/Ab.imp*1000,true)+'</span>':''),
+      s1:'CTR: <strong>'+fPct(ctr,2)+'</strong>'+(Ab?' '+momHtml(ctr,Ab.clk/Ab.imp):'')+' · CVR: <strong>'+fPct(cvr,2)+'</strong>'+(Ab?' '+momHtml(cvr,Ab.conv/Ab.clk):''),
+      s2:'CPC: <strong>'+fInt(cpc)+'</strong>'+(Ab?' '+momHtml(cpc,Ab.cost/Ab.clk,true):'')+' · Impr: <strong>'+fC(A.imp)+'</strong>'+(Ab?' '+momHtml(A.imp,Ab.imp):'')}
   ];
   $('kpiRow').innerHTML=kpis.map(k=>`<div class="kpi${k.hl?' hl':''}"><div class="lb">${k.lb}</div><div class="vl ${k.vc||''}">${k.vl}</div><div class="s1">${k.s1}</div><div class="s2">${k.s2}</div></div>`).join('');
 
