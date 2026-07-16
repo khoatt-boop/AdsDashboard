@@ -233,6 +233,11 @@ th.sactive{background:#0f1424;}
   <div class="card"><div class="ct">NMV Total &amp; TACOS Total by Date</div><div class="cwl"><canvas id="cRoi"></canvas></div></div>
 </div>
 
+<div class="full card">
+  <div class="ct">📈 <span id="lmTitle">NMV Total vs LM by date</span> &nbsp;·&nbsp; <span style="text-transform:none;color:#999;font-weight:400;font-style:italic;">so <b>cùng ngày</b> tháng trước · nét đứt = LM · chạy theo brand/cross-filter, không phụ thuộc khoảng ngày</span></div>
+  <div class="cwl"><canvas id="cLm"></canvas></div>
+</div>
+
 <div class="g2">
   <div class="card">
     <div class="ct">🧩 NMV Organic vs Ads by Date &nbsp;·&nbsp; <span style="text-transform:none;color:#999;font-weight:400;">cột chồng = NMV Total (Ads + Organic) · line = %NMV đến từ Ads</span></div>
@@ -1108,6 +1113,32 @@ function buildRoi(){
   ]},options:lineOpts(v=>fC(v),v=>v.toFixed(0)+'%')});
 }
 
+// ---- NMV Total vs LM by date: area chong, TM lien - LM net dut (kieu PBI) ----
+function buildNmvLm(){
+  // TM = thang dang chon neu chon 1 thang, nguoc lai thang cua ngay du lieu cuoi; LM = thang lien truoc
+  const tm=(mSel==='2026-06'||mSel==='2026-07')?mSel:maxDate.slice(0,7);
+  const pp=tm.split('-'); let py=+pp[0],pm=+pp[1]-1; if(pm<1){pm=12;py--;}
+  const lm=py+'-'+String(pm).padStart(2,'0');
+  const cur={},prev={};
+  V.byDate.forEach(r=>{ if(!passF(r[1],r[2],r[3]))return;
+    const mo=r[0].slice(0,7),d=+r[0].slice(8,10);
+    if(mo===tm) cur[d]=(cur[d]||0)+r[6];
+    else if(mo===lm) prev[d]=(prev[d]||0)+r[6]; });
+  const nd=Math.max(monthDays[tm]||31,monthDays[lm]||30);
+  const labels=[],a=[],b=[];
+  for(let d=1;d<=nd;d++){ labels.push(d); a.push(cur[d]!=null?cur[d]:null); b.push(prev[d]!=null?prev[d]:null); }
+  const mmyy=s=>s.slice(5,7)+'/'+s.slice(0,4);
+  const el=$('lmTitle'); if(el) el.textContent='NMV Total vs LM by date — '+mmyy(tm)+' vs '+mmyy(lm);
+  mk('cLm',{type:'line',data:{labels,datasets:[
+    {label:'NMV '+mmyy(tm),data:a,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,.32)',fill:true,tension:.35,pointRadius:2,borderWidth:2},
+    {label:'NMV LM '+mmyy(lm),data:b,borderColor:'#475569',borderDash:[5,3],backgroundColor:'rgba(71,85,105,.28)',fill:true,tension:.35,pointRadius:0,borderWidth:1.5}
+  ]},options:{plugins:{legend:{labels:{font:{size:7},boxWidth:10}},
+      tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y==null?'—':fC(c.parsed.y))}}},
+    scales:{x:{ticks:{font:{size:6}}},y:{ticks:{font:{size:7},callback:v=>fC(v)}}},
+    interaction:{mode:'index',intersect:false},
+    responsive:true,maintainAspectRatio:false,animation:false}});
+}
+
 function render(){
   ['dvAll','dv0','dv1'].forEach((id,i)=>{ const v=(i===0)?'All':String(i-1); $(id).className='dtab'+(dSel===v?' on':''); });
   const nShop=D.shops.filter((s,i)=>divOk(i)).length;
@@ -1452,6 +1483,7 @@ function render(){
   $('tblMonth').innerHTML=h;
 
   buildRoi();
+  buildNmvLm();
   buildPie();
   buildMix();
   buildAngleChart();
