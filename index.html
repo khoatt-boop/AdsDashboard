@@ -589,6 +589,11 @@ function actCell(pn,tacR){
   if(!a) return '<td>—</td>';
   return `<td style="background:${ACT[a].bg};color:${ACT[a].fg};font-weight:700;text-align:center;white-space:nowrap;">${a} · ${ACT[a].t}</td>`;
 }
+// bản KHÔNG tô nền cho hàng Total (hàng sticky đáy, tô nền sẽ bị lem khi cuộn)
+function actCellPlain(pn,tacR){
+  const a=suggest(pn,tacR);
+  return `<td style="text-align:center;font-weight:700;white-space:nowrap;">${a?a+' · '+ACT[a].t:'—'}</td>`;
+}
 const ddmm=iso=>iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4);
 $('hdrRange').textContent = 'Dữ liệu: '+ddmm(minDate)+' – '+ddmm(maxDate);
 ['dFrom','dTo'].forEach(id=>{ $(id).min=minDate; $(id).max=maxDate; });
@@ -1345,7 +1350,7 @@ function render(){
       +`<td>${fPct(MX.cr(o),2)}</td>${mc(MX.cr(o),b?MX.cr(b):null)}</tr>`; });
   let totTgt=0; dates.forEach(dt=>{ const t=dTgt(dt); if(t)totTgt+=t; });
   const totAchi=totTgt?A.nmv/totTgt:null;
-  h+=`<tr class="tot"><td>Total</td><td>${fInt(A.nmv)}</td><td style="${gradAround(totAchi,1,0.10)}">${fPct(totAchi,1)}</td>`
+  h+=`<tr class="tot"><td>Total</td><td>${fInt(A.nmv)}</td><td style="font-weight:700;">${fPct(totAchi,1)}</td>`
     +`<td>${fPct(MX.tacos(A),2)}</td><td>${fR(MX.roas(A))}</td>`
     +`<td>${fInt(A.cost)}</td>${mc(A.cost,Ab?Ab.cost:null,true)}`
     +`<td>${fInt(A.imp)}</td>${mc(A.imp,Ab?Ab.imp:null)}`
@@ -1439,8 +1444,8 @@ function render(){
       +`<td>${fInt(AT.nmvAds)}</td>${momTd(AT.a7,AT.a6k)}`
       +`<td>${fInt(AT.cost)}</td>${momTd(AT.c7,AT.c6k,true)}`
       +`<td>${fPct(tac,1)}</td><td>${fR(ro)}</td>`
-      +`<td style="${bandStyle(nmvBand(g))}">${g==null?'—':fPct(g,0)}</td>`
-      +`<td style="${bandStyle(tacBand(tacR))}">${fPct(tacR,0)}</td>${actCell(g,tacR)}`
+      +`<td>${g==null?'—':fPct(g,0)}</td>`
+      +`<td>${fPct(tacR,0)}</td>${actCellPlain(g,tacR)}`
       +`<td>${fC(AT.imp)}</td><td>${fPct(ctr_,2)}</td><td>${fPct(cvr_,2)}</td></tr>`;
   }
   h+='</tbody>'; $('tblAngle').innerHTML=h;
@@ -1508,8 +1513,8 @@ function render(){
       +`<td>${fInt(PT.o)}</td>`
       +`<td>${fInt(PT.cost)}</td>${momTd(PT.c7,PT.c6k,true)}`
       +`<td>${fPct(tac,1)}</td><td>${fR(ro)}</td>`
-      +`<td style="${bandStyle(nmvBand(g))}">${g==null?'—':fPct(g,0)}</td>`
-      +`<td style="${bandStyle(tacBand(tacR))}">${fPct(tacR,0)}</td>${actCell(g,tacR)}`
+      +`<td>${g==null?'—':fPct(g,0)}</td>`
+      +`<td>${fPct(tacR,0)}</td>${actCellPlain(g,tacR)}`
       +`<td>${fC(PT.imp)}</td><td>${fPct(ctr_,2)}</td><td>${fPct(cvr_,2)}</td></tr>`;
   }
   h+='</tbody>'; $('tblProduct').innerHTML=h;
