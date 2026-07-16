@@ -74,18 +74,25 @@ tr.tot td:first-child{text-align:left;}
 .wk-table td.mlbl{color:#555;}
 .wk-table .mchip{display:inline-block;padding:1.5px 9px;border-radius:9px;font-weight:800;font-size:7.5px;letter-spacing:.3px;line-height:1.4;}
 /* block tuan theo style Ecomobi Awards: header trang chu xam uppercase, hover hong nhat */
-.wk-table th{background:#fff;color:#6b7280;font-weight:700;font-size:8px;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid #f3f4f6;padding:6px 5px;}
-.wk-table th.sactive{background:#FDECEB;color:#EE3124;}
+.wk-table th{background:#EE3124;color:#fff;font-weight:700;font-size:8px;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid #c9241a;border-right:2px solid rgba(255,255,255,.85);padding:6px 5px;}
+.wk-table th:last-child{border-right:none;}
+.wk-table th.sactive{background:#a81d15;color:#fff;}
+.wk-table td{border-right:1px solid #e5e7eb;}
+.wk-table td:last-child{border-right:none;}
+/* insight 7 ngày dưới tên brand trong bảng tuần */
+.wk-table .b7{font-weight:400;font-size:7.5px;color:#6b7280;margin-top:4px;line-height:1.55;text-transform:none;letter-spacing:0;}
+.wk-table .b7 .rolechip{display:inline-block;background:#FDECEB;color:#c2410c;border:1px solid #f6c3bf;border-radius:8px;padding:0.5px 6px;font-weight:700;margin-top:2px;white-space:normal;}
+.wk-table td{padding:2px 4px;}
 .wk-table td{border-bottom:1px solid #f7f7f7;}
 .wk-table tr:hover{background:#FDF6F5;}
-.wk-table td.blbl{font-weight:800;color:#414042;font-size:9.5px;border-right:1px solid #f3f4f6;}
+.wk-table td.blbl{font-weight:800;color:#414042;font-size:9.5px;border-right:1px solid #f3f4f6;max-width:150px;width:150px;white-space:normal;}
 .dvtag{display:inline-block;margin-left:5px;padding:1px 5px;border-radius:7px;font-size:6.5px;font-weight:800;letter-spacing:.4px;vertical-align:middle;border:1px solid;}
 .dvtag.d0{background:#dbeafe;color:#1e40af;border-color:#93c5fd;}
 .dvtag.d1{background:#fae8ff;color:#86198f;border-color:#e9d5ff;}
 .wk-table tr:nth-child(7n) td{border-bottom:2px solid #f3d4d1;}
 .wk-table th{text-align:right;}
 .wk-table th:first-child,.wk-table th:nth-child(2){text-align:left;}
-.wk-table td.spk{padding:1px 5px;border-left:2px solid #e5e7eb;width:92px;}
+.wk-table td.spk{padding:1px 5px;border-left:2px solid #e5e7eb;width:138px;}
 .wk-table td.spk svg{margin:0 auto;}
 .divbar{background:#FDF1F0;border:1px solid #f8d7d4;border-top:none;border-radius:0 0 5px 5px;padding:5px 12px;margin-bottom:7px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .divlbl{font-size:7.5px;color:#c2554e;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-right:4px;}
@@ -584,6 +591,9 @@ function tacBand(r){ if(r==null||!isFinite(r))return null; if(r>1.15)return 0; i
 function suggest(pn,tacR){ const g=nmvBand(pn),t=tacBand(tacR); if(g==null||t==null)return null; return ACTM[g][t]; }
 const BANDBG=['rgba(239,68,68,.55)','rgba(249,115,22,.55)','rgba(209,213,219,.5)','rgba(34,197,94,.5)'];
 function bandStyle(b){ return b==null?'':`background:${BANDBG[b]};`; }
+// bản CHỮ MÀU (không tô nền) — dùng cho cột NMV MoM (RR) & TACOS vs Tgt bảng Angle/Product
+const BANDTX=['#dc2626','#ea580c','#6b7280','#16a34a'];
+function bandText(b){ return b==null?'':`color:${BANDTX[b]};font-weight:700;`; }
 function actCell(pn,tacR){
   const a=suggest(pn,tacR);
   if(!a) return '<td>—</td>';
@@ -716,20 +726,50 @@ function makeSortable(id){
 // datalabels: dang ky nhung MAC DINH TAT — chi chart nao khai bao moi bat
 if(window.ChartDataLabels){ Chart.register(ChartDataLabels); Chart.defaults.set('plugins.datalabels',{display:false}); }
 // ---- ngày quan trọng trên chart theo ngày: ngày đôi (6/6, 7/7…) ±1 ngày, 14-15, 24-25 ----
-function keyDay(d,m){ return d===m||d===m-1||d===m+1||d===14||d===15||d===24||d===25; }
-// nhãn số cho chart có labels dạng 'dd/mm'
+function keyDay(d,m){ return d===m||d===m-1||d===m+1||(d>=14&&d<=16)||(d>=24&&d<=26); }
+// đỉnh/đáy của chuỗi (bỏ null): trả [iMax, iMin]
+function extIdx(data){ let mx=-Infinity,mn=Infinity,ix=-1,im=-1;
+  data.forEach((v,i)=>{ if(v==null)return; if(v>mx){mx=v;ix=i;} if(v<mn){mn=v;im=i;} }); return [ix,im]; }
+function isExt(c){ const [x,n]=extIdx(c.dataset.data); return c.dataIndex===x||c.dataIndex===n; }
+// đỉnh = xanh lá, đáy = đỏ
+function extClr(c,clr){ const [x,n]=extIdx(c.dataset.data);
+  return c.dataIndex===x?'#16a34a':(c.dataIndex===n?'#dc2626':clr); }
+// nhãn số cho chart có labels dạng 'dd/mm' — hiện ở ngày quan trọng + đỉnh/đáy (đậm, đỏ)
 function kdl(clr,pos){ return {
-  display:c=>{ const l=String(c.chart.data.labels[c.dataIndex]); const m2=l.match(/^(\d{2})\/(\d{2})$/); if(!m2) return false;
-    return keyDay(+m2[1],+m2[2]) && c.dataset.data[c.dataIndex]!=null; },
-  formatter:v=>fC(v), color:clr, font:{size:6.5,weight:700}, anchor:'end', align:pos||'top', offset:0, clip:false }; }
+  display:c=>{ if(c.dataset.data[c.dataIndex]==null) return false;
+    if(isExt(c)) return true;
+    const l=String(c.chart.data.labels[c.dataIndex]); const m2=l.match(/^(\d{2})\/(\d{2})$/);
+    return !!m2 && keyDay(+m2[1],+m2[2]); },
+  formatter:v=>fC(v),
+  color:c=>extClr(c,clr),
+  font:c=>({size:6.5,weight:isExt(c)?900:700}),
+  anchor:'end', align:pos||'top', offset:0, clip:false }; }
+// nhãn CHỈ HIỆN KHI PHÓNG TO (focus mode): đỉnh/đáy + ngày quan trọng — dùng cho c5–c8
+function inFocusChart(ch){ return typeof FOC!=='undefined' && FOC.card && ch && FOC.card.contains(ch.canvas); }
+function kdlF(clr,fmt,pos){ return {
+  display:c=>{ if(!inFocusChart(c.chart)) return false;
+    if(c.dataset.data[c.dataIndex]==null) return false;
+    if(isExt(c)) return true;
+    const l=String(c.chart.data.labels[c.dataIndex]); const m2=l.match(/^(\d{2})\/(\d{2})$/);
+    return !!m2 && keyDay(+m2[1],+m2[2]); },
+  formatter:fmt, color:c=>extClr(c,clr), font:c=>({size:8,weight:isExt(c)?900:700}),
+  anchor:'end', align:pos||'top', offset:0, clip:false }; }
 // nhãn số cho chart có labels là SỐ ngày (cLm) — tháng lấy từ dataset._mm
 function kdlNum(clr,pos){ return {
-  display:c=>{ const d=+c.chart.data.labels[c.dataIndex];
-    return keyDay(d,c.dataset._mm||0) && c.dataset.data[c.dataIndex]!=null; },
-  formatter:v=>fC(v), color:clr, font:{size:6.5,weight:700}, anchor:'end', align:pos||'top', offset:0, clip:false }; }
+  display:c=>{ if(c.dataset.data[c.dataIndex]==null) return false;
+    if(isExt(c)) return true;
+    return keyDay(+c.chart.data.labels[c.dataIndex],c.dataset._mm||0); },
+  formatter:v=>fC(v),
+  color:c=>extClr(c,clr),
+  font:c=>({size:6.5,weight:isExt(c)?900:700}),
+  anchor:'end', align:pos||'top', offset:0, clip:false }; }
 const charts={};
 function mk(id,cfg){
   try{
+    // line luôn vẽ ĐÈ LÊN cột: order thấp -> Chart.js vẽ sau cùng -> nằm trên
+    if(cfg&&cfg.data&&cfg.data.datasets){
+      cfg.data.datasets.forEach(ds=>{ if(ds.order==null){ ds.order=((ds.type||cfg.type)==='line')?1:2; } });
+    }
     if(charts[id]){ charts[id].destroy(); delete charts[id]; }
     const ex=Chart.getChart? Chart.getChart(id):null; if(ex) ex.destroy();   // dọn instance mồ côi
     charts[id]=new Chart($(id),cfg);
@@ -847,7 +887,7 @@ function buildTargetTable(tblId,noteId,mode){
     T.nmvT+=nmvT;T.adsT+=adsT;T.nmvA+=nmvA;T.adsA+=adsA;
     const pn=nmvA/nmvT, pa=adsA/adsT, tacT=adsT/nmvT, tacA=adsA/nmvA, ptac=tacT/tacA;
     const ref=(mode==='mtd')?pace:1, tacR=tacA/tacT;
-    h+=`<tr><td>${brandLogo(b.shop)}${D.shops[b.shop]}</td><td>${picChip(b)}</td><td>${fInt(nmvT)}</td><td>${fInt(nmvA)}</td><td style="${gradAround(pn,ref,0.10)}">${fPct(pn,1)}</td><td>${fInt(adsT)}</td><td>${fInt(adsA)}</td><td style="${gradAround(pa,ref,0.10)}">${fPct(pa,1)}</td><td>${fPct(tacT,1)}</td><td>${fPct(tacA,1)}</td><td style="${gradAround(ptac,1,0.10)}">${fPct(ptac,1)}</td>`
+    h+=`<tr><td>${brandLogo(b.shop)}${D.shops[b.shop]}</td><td>${picChip(b)}</td><td>${fInt(nmvT)}</td><td>${fInt(nmvA)}</td><td style="${gradAround(pn,ref,0.10)}">${fPct(pn,1)}</td><td>${fInt(adsT)}</td><td>${fInt(adsA)}</td><td style="${gradAround(pa,ref,0.10)}">${fPct(pa,1)}</td><td>${fPct(tacT,1)}</td><td style="${(isFinite(tacA)&&isFinite(tacT))?(tacA>tacT?'background:#fee2e2;color:#dc2626;font-weight:700;':'color:#16a34a;font-weight:700;'):''}">${fPct(tacA,1)}</td><td style="${gradAround(ptac,1,0.10)}">${fPct(ptac,1)}</td>`
       + (isPr?`<td style="${bandStyle(tacBand(tacR))}">${fPct(tacR,1)}</td>`+actCell(pn,tacR):'') + `</tr>`;
   });
   const pnT=T.nmvA/T.nmvT, paT=T.adsA/T.adsT, tacTT=T.adsT/T.nmvT, tacAT=T.adsA/T.nmvA, ptacT=tacTT/tacAT;
@@ -865,7 +905,7 @@ function weekOf(iso){ const p=iso.split('-').map(Number); const t=Date.UTC(p[0],
 function weekStartIso(w){ return new Date(WEEK0+(w-27)*604800000).toISOString().slice(0,10); }
 // sparkline SVG inline: đường xu hướng + chấm ở điểm cuối
 function spark(vals,color,fmt){
-  const w=84,h=17, idx=[], v=[];
+  const w=126,h=17, idx=[], v=[];   // rộng +50% để thấy rõ trendline
   vals.forEach((x,i)=>{ if(x!=null&&isFinite(x)){ idx.push(i); v.push(x); } });
   if(v.length<2) return '';
   const mn=Math.min.apply(null,v), mx=Math.max.apply(null,v), rng=(mx-mn)||1, n=vals.length;
@@ -894,6 +934,44 @@ function buildWeeks(){
     if(!wk[r[1]])wk[r[1]]={}; if(!wk[r[1]][w])wk[r[1]][w]={nmv:0,cost:0,nmvAds:0}; wk[r[1]][w].nmv+=r[6]; wk[r[1]][w].cost+=r[7]; wk[r[1]][w].nmvAds+=r[12]; });
   const weeks=[...wset].sort((a,b)=>a-b);
   $('wkNote').textContent='Tuần bắt đầu Thứ 5 (Tuần 27 = 02/07) · TACOS = Spend/NMV · ROAS = NMV Ads/Spend · WoW so tuần trước · tuần đầu/cuối chuỗi có thể chưa đủ 7 ngày';
+  // ---- insight MTD cho từng brand: đầu tháng -> hiện tại, so CÙNG KỲ tháng trước ----
+  const ins={};
+  (function(){
+    const tmM=maxDate.slice(0,7), dMax=+maxDate.slice(8,10);
+    const pp2=tmM.split('-'); let py2=+pp2[0],pm2=+pp2[1]-1; if(pm2<1){pm2=12;py2--;}
+    const lmM=py2+'-'+String(pm2).padStart(2,'0');
+    const m={};
+    V.byShop.forEach(r=>{ if(!passF(r[1],r[2],r[3]))return;
+      const mo=r[0].slice(0,7), d=+r[0].slice(8,10);
+      let w=null; if(mo===tmM&&d<=dMax)w=1; else if(mo===lmM&&d<=dMax)w=0;
+      if(w==null)return;
+      if(!m[r[1]])m[r[1]]={n1:0,c1:0,n0:0,c0:0};
+      const x=m[r[1]]; if(w){x.n1+=r[6];x.c1+=r[7];}else{x.n0+=r[6];x.c0+=r[7];} });
+    [0,1].forEach(dv=>{
+      const bs=brandTargets.filter(b=>b.shop>=0&&D.shopDiv[b.shop]===dv&&m[b.shop]&&m[b.shop].n1>0);
+      if(!bs.length) return;
+      const tot=bs.reduce((s2,b)=>s2+m[b.shop].n1,0);
+      const info=bs.map(b=>{ const x=m[b.shop];
+        return {s:b.shop, share:x.n1/tot, tr:x.n0?x.n1/x.n0-1:null, tac:x.c1/x.n1, dTac:(x.n0&&x.c0)?(x.c1/x.n1)-(x.c0/x.n0):null}; });
+      info.forEach(i=>{ ins[i.s]={share:i.share,tr:i.tr,tac:i.tac,dTac:i.dTac,roles:[]}; });
+      const pfmt=d=>(d>=0?'▲':'▼')+Math.abs(d*100).toFixed(0)+'%';
+      const carrier=info.reduce((a,c)=>c.share>a.share?c:a);
+      ins[carrier.s].roles.push('🏋️ gánh team — chiếm '+Math.round(carrier.share*100)+'% NMV nhóm (MTD)');
+      const withTr=info.filter(i=>i.tr!=null);
+      if(withTr.length>=2){
+        const best=withTr.reduce((a,c)=>c.tr>a.tr?c:a), worst=withTr.reduce((a,c)=>c.tr<a.tr?c:a);
+        if(best.s!==worst.s){
+          ins[best.s].roles.push('💪 khỏe nhất nhóm — NMV MTD '+pfmt(best.tr)+' vs LM cùng kỳ');
+          ins[worst.s].roles.push('🥀 đuối nhất nhóm — NMV MTD '+pfmt(worst.tr)+' vs LM cùng kỳ');
+        }
+      }
+    });
+  })();
+  const b7html=s=>{ const i=ins[s]; if(!i) return '';
+    const arr=d=>`<span style="color:${d>=0?'#16a34a':'#dc2626'};font-weight:700;">${d>=0?'▲':'▼'}${Math.abs(d*100).toFixed(0)}%</span>`;
+    const dt=i.dTac==null?'':(i.dTac<=0?' <span style="color:#16a34a;">▼</span>':' <span style="color:#dc2626;">▲</span>');
+    return `<div class="b7" title="MTD = từ đầu tháng đến ${ddmm(maxDate)} · so với cùng kỳ tháng trước">MTD: NMV ${i.tr==null?'—':arr(i.tr)} vs LM · TACOS ${fPct(i.tac,1)}${dt}`
+      +(i.roles.length?`<br>${i.roles.map(r=>`<span class="rolechip">${r}</span>`).join(' ')}`:'')+`</div>`; };
   let h='<thead><tr><th>Brand</th><th>Chỉ số</th>'+weeks.map(w=>'<th>W'+w+'<br><span style="font-weight:400;font-size:7px;">'+ddmm(weekStartIso(w)).slice(0,5)+'</span></th>').join('')+'<th style="text-align:center;">Xu hướng</th></tr></thead><tbody>';
   brandTargets.forEach(b=>{ const s=b.shop; if(s<0||!wk[s])return;
     const nmv=weeks.map(w=>wk[s][w]?wk[s][w].nmv:null);
@@ -917,7 +995,7 @@ function buildWeeks(){
     spec.forEach((rs,ri)=>{
       // chip kieu tint (nen nhat + chu mau) nhu chip trang Awards
       const lab = rs.clr ? `<span class="mchip" style="background:${rs.clr}1a;color:${rs.clr};border:1px solid ${rs.clr}45;">${rs.lb}</span>` : rs.lb;
-      h+='<tr>'+(ri===0?`<td rowspan="7" class="blbl">${brandLogo(+s)}${D.shops[s]}${divTag(s)}</td>`:'')
+      h+='<tr>'+(ri===0?`<td rowspan="7" class="blbl">${brandLogo(+s)}${D.shops[s]}${divTag(s)}${b7html(s)}</td>`:'')
         +`<td class="mlbl">${lab}</td>`
         +rs.cells.map(c=>`<td${rs.strong?' style="font-weight:700;color:#414042;"':''}>${c}</td>`).join('')
         +`<td class="spk">${rs.clr?spark(rs.raw,rs.clr,rs.fmt):''}</td>`+'</tr>'; });
@@ -1011,7 +1089,10 @@ function buildPie(){
   const tot=es.reduce((s,e)=>s+e[1],0);
   mk('cPie',{type:'pie',
     data:{labels:es.map(e=>D.shops[e[0]]),datasets:[{data:es.map(e=>e[1]),
-      backgroundColor:es.map((e,i)=>PIECLR[i%PIECLR.length]),borderWidth:1,borderColor:'#fff'}]},
+      backgroundColor:es.map((e,i)=>PIECLR[i%PIECLR.length]),borderWidth:1,borderColor:'#fff',
+      datalabels:{display:c=>tot&&c.dataset.data[c.dataIndex]/tot>=0.04,
+        formatter:v=>tot?Math.round(v/tot*100)+'%':'',
+        color:'#fff',font:{size:8.5,weight:800}}}]},
     options:{plugins:{legend:{display:false},tooltip:{callbacks:{
       label:c=>c.label+': '+fC(c.parsed)+' ('+(tot?(c.parsed/tot*100).toFixed(2):0)+'%)'}}},
       responsive:true,maintainAspectRatio:false,animation:false}});
@@ -1076,7 +1157,9 @@ function buildAngleChart(){
   mk('cAngle',{type:'bar',
     data:{labels:es.map(e=>short(D.angles[e[0]])),
       datasets:[{label:M.lb,data:es.map(e=>M.f(e[1])),
-        backgroundColor:es.map(e=>cf.angle===+e[0]?'#fbbf24':M.clr),borderRadius:2}]},
+        backgroundColor:es.map(e=>cf.angle===+e[0]?'#fbbf24':M.clr),borderRadius:2,
+        datalabels:{display:true,anchor:'end',align:'start',clamp:true,
+          color:'#fff',font:{size:7,weight:700},formatter:v=>M.fmt(v)}}]},
     options:{indexAxis:'y',
       onClick:(ev,el)=>{ if(el.length) toggleCf('angle',+es[el[0].index][0]); },
       plugins:{legend:{display:false},
@@ -1185,26 +1268,32 @@ function buildRoi(){
         else if(rr>=0.90){ic='⚪';st='đúng tiến độ';}
         else if(rr>=0.75){ic='🟡';st='chậm tiến độ';}
         else{ic='🔴';st='chậm rõ';}
-        const tip = rr>=0.90 ? (tacHi?'giữ NMV, tối ưu cost':(tacOk?'duy trì, có thể scale':'theo dõi cost'))
-                             : (tacHi?'kiểm soát spend gấp':(tacOk?'còn room đẩy ads':'đẩy NMV, giữ cost'));
+        // gợi ý sau mũi tên: in đậm + tô màu theo mức độ (xanh = tốt, cam = chỉnh, đỏ = gấp)
+        let tip,tipc;
+        if(rr>=0.90){ if(tacHi){tip='giữ NMV, tối ưu cost';tipc='#b45309';}
+          else if(tacOk){tip='duy trì, có thể scale';tipc='#16a34a';}
+          else {tip='theo dõi cost';tipc='#b45309';} }
+        else{ if(tacHi){tip='kiểm soát spend gấp';tipc='#dc2626';}
+          else if(tacOk){tip='còn room đẩy ads';tipc='#16a34a';}
+          else {tip='đẩy NMV, giữ cost';tipc='#b45309';} }
         const tc = tacHi?'#dc2626':(tacOk?'#16a34a':'#b45309');
-        lines+=`<div style="padding-left:9px;margin-top:2px;">${ic} ${brandLogo(b.shop,11)}<b>${b.code}</b> ${st} — MTD <b>${Math.round(mtd*100)}%</b> · RR <b>${Math.round(rr*100)}%</b> · TACOS <span style="color:${tc};font-weight:700;">${fPct(tacA,1)}</span>/${fPct(tacT,1)} · ${trendHtml(x)} → <i>${tip}</i></div>`;
+        lines+=`<div style="padding-left:9px;margin-top:2px;">${ic} ${brandLogo(b.shop,11)}<b>${b.code}</b> ${st} — MTD <b>${Math.round(mtd*100)}%</b> · RR <b>${Math.round(rr*100)}%</b> · TACOS <span style="color:${tc};font-weight:700;">${fPct(tacA,1)}</span>/${fPct(tacT,1)} · ${trendHtml(x)} → <b style="color:${tipc};">${tip}</b></div>`;
       });
       if(!lines) return;
       const rrD=agg.nmv/agg.tgtTD, tacD=agg.cost/agg.nmv, tacTD=agg.adsTgt/agg.nmvTgt;
       const d7D=(agg.n0&&agg.n1)?agg.n1/agg.n0-1:null;
-      let rec;
-      if(rrD>=1.0&&tacD<=tacTD*1.05) rec='đang gánh số — ưu tiên giữ/tăng budget';
-      else if(rrD>=0.9) rec='bám sát tiến độ — giữ budget, tối ưu dần';
-      else if(tacD<=tacTD) rec='hụt số nhưng hiệu quả ổn — nên bơm thêm budget đẩy NMV';
-      else rec='hụt số + TACOS cao — cơ cấu lại budget, không bơm thêm';
+      let rec,recc;
+      if(rrD>=1.0&&tacD<=tacTD*1.05){ rec='đang gánh số — ưu tiên giữ/tăng budget'; recc='#16a34a'; }
+      else if(rrD>=0.9){ rec='bám sát tiến độ — giữ budget, tối ưu dần'; recc='#b45309'; }
+      else if(tacD<=tacTD){ rec='hụt số nhưng hiệu quả ổn — nên bơm thêm budget đẩy NMV'; recc='#b45309'; }
+      else { rec='hụt số + TACOS cao — cơ cấu lại budget, không bơm thêm'; recc='#dc2626'; }
       if(d7D!=null&&d7D<-0.15) rec+=' ⚠️ nhưng 7d đang giảm mạnh — theo dõi sát';
       const call=(inc.length?' · tăng: '+inc.join(', '):'')+(dec.length?' · giảm/kiểm soát: '+dec.join(', '):'');
       const d7s=d7D==null?'':` · 7d NMV <span style="color:${d7D>=0?'#16a34a':'#dc2626'};font-weight:700;">${d7D>=0?'▲':'▼'}${Math.abs(Math.round(d7D*100))}%</span>`;
       const dvc=dv===0?'#0f766e':'#7c3aed';
       // header division trai het chieu ngang, cac dong brand ben duoi tu chay 2 cot -> khong bi trong
       secs.push(`<div class="dvhead" style="grid-column:1/-1;border-left:3px solid ${dvc};">`
-        +`<span class="dvname" style="color:${dvc};">${D.divisions[dv]}</span> — RR <b>${Math.round(rrD*100)}%</b> · TACOS <b>${fPct(tacD,1)}</b>/${fPct(tacTD,1)}${d7s} → <b>${rec}</b><span style="color:#6b7280;"><i>${call}</i></span></div>${lines}`);
+        +`<span class="dvname" style="color:${dvc};">${D.divisions[dv]}</span> — RR <b>${Math.round(rrD*100)}%</b> · TACOS <b>${fPct(tacD,1)}</b>/${fPct(tacTD,1)}${d7s} → <b style="color:${recc};">${rec}</b><span style="color:#6b7280;"><i>${call}</i></span></div>${lines}`);
     });
     const rng=dAll.length>=14?` (${ddmm(dAll.slice(-7)[0])}–${ddmm(dAll[dAll.length-1])} vs ${ddmm(dAll.slice(-14,-7)[0])}–${ddmm(dAll.slice(-14,-7)[6])})`:'';
     box.innerHTML=`<div class="ntt">📌 NHẬN XÉT PFM &amp; TIẾN ĐỘ THEO BRAND — MTD · RUN-RATE · TACOS · TREND 7D</div>`
@@ -1239,8 +1328,10 @@ function buildNmvLm(){
   const mmyy=s=>s.slice(5,7)+'/'+s.slice(0,4);
   const el=$('lmTitle'); if(el) el.textContent='NMV Total vs LM by date — '+mmyy(tm)+' vs '+mmyy(lm);
   mk('cLm',{type:'line',data:{labels,datasets:[
-    {label:'NMV '+mmyy(tm),data:a,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,.32)',fill:true,tension:.35,pointRadius:2,borderWidth:2,_mm:+tm.slice(5,7),datalabels:kdlNum('#ea580c','top')},
-    {label:'NMV LM '+mmyy(lm),data:b,borderColor:'#475569',borderDash:[5,3],backgroundColor:'rgba(71,85,105,.28)',fill:true,tension:.35,pointRadius:0,borderWidth:1.5,_mm:+lm.slice(5,7),datalabels:kdlNum('#475569','bottom')}
+    {label:'NMV '+mmyy(tm),data:a,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,.32)',fill:true,tension:.35,borderWidth:2,_mm:+tm.slice(5,7),datalabels:kdlNum('#ea580c','top'),
+      pointRadius:c=>isExt(c)?4.5:2,pointBackgroundColor:c=>extClr(c,'#f97316'),pointBorderColor:c=>extClr(c,'#f97316')},
+    {label:'NMV LM '+mmyy(lm),data:b,borderColor:'#475569',borderDash:[5,3],backgroundColor:'rgba(71,85,105,.28)',fill:true,tension:.35,borderWidth:1.5,_mm:+lm.slice(5,7),datalabels:kdlNum('#475569','bottom'),
+      pointRadius:c=>isExt(c)?4:0,pointBackgroundColor:c=>extClr(c,'#475569'),pointBorderColor:c=>extClr(c,'#475569')}
   ]},options:{plugins:{legend:{labels:{font:{size:7},boxWidth:10}},
       tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y==null?'—':fC(c.parsed.y))}}},
     scales:{x:{ticks:{font:{size:6}}},y:{ticks:{font:{size:7},callback:v=>fC(v)}}},
@@ -1319,21 +1410,22 @@ function render(){
   $('funnel').innerHTML=fs.map(s=>`<div class="fn-bar"><span class="fn-lbl">${s[0]}</span><div class="fn-bg"><div class="fn-fill" style="width:${Math.min(100,s[3])}%;background:${s[2]};"><span class="fn-val">${fInt(s[1])}</span></div></div></div>`).join('')
     +`<div style="margin-top:6px;font-size:8px;color:#888;text-align:right;">CTR ${fPct(ctr,2)} → CVR ${fPct(cvr,2)}</div>`;
 
+  // c5–c8: nhãn số CHỈ hiện khi phóng to (focus): đỉnh/đáy + ngày quan trọng
   mk('c5',{data:{labels:L,datasets:[
-    {type:'bar',label:'Impressions',data:g('imp'),backgroundColor:'#a5f3fc',yAxisID:'y'},
-    {type:'line',label:'CPM',data:dates.map(d=>bd[d].imp?bd[d].cost/bd[d].imp*1000:null),borderColor:'#0891b2',borderWidth:2,pointRadius:1.5,tension:.4,yAxisID:'y1'}
+    {type:'bar',label:'Impressions',data:g('imp'),backgroundColor:'#a5f3fc',yAxisID:'y',datalabels:kdlF('#0e7490',v=>fC(v),'start')},
+    {type:'line',label:'CPM',data:dates.map(d=>bd[d].imp?bd[d].cost/bd[d].imp*1000:null),borderColor:'#0891b2',borderWidth:2,pointRadius:1.5,tension:.4,yAxisID:'y1',datalabels:kdlF('#0891b2',v=>fC(v),'top')}
   ]},options:lineOpts(v=>fC(v),v=>fC(v))});
   mk('c6',{data:{labels:L,datasets:[
-    {type:'bar',label:'Clicks',data:g('clk'),backgroundColor:'#c7d2fe',yAxisID:'y'},
-    {type:'line',label:'CPC',data:dates.map(d=>bd[d].clk?bd[d].cost/bd[d].clk:null),borderColor:'#6366f1',borderWidth:2,pointRadius:1.5,tension:.4,yAxisID:'y1'}
+    {type:'bar',label:'Clicks',data:g('clk'),backgroundColor:'#c7d2fe',yAxisID:'y',datalabels:kdlF('#4f46e5',v=>fC(v),'start')},
+    {type:'line',label:'CPC',data:dates.map(d=>bd[d].clk?bd[d].cost/bd[d].clk:null),borderColor:'#6366f1',borderWidth:2,pointRadius:1.5,tension:.4,yAxisID:'y1',datalabels:kdlF('#6366f1',v=>fInt(v),'top')}
   ]},options:lineOpts(v=>fC(v),v=>fC(v))});
   mk('c7',{data:{labels:L,datasets:[
-    {type:'bar',label:'CTR',data:dates.map(d=>bd[d].imp?bd[d].clk/bd[d].imp*100:null),backgroundColor:'#bfdbfe',yAxisID:'y'},
-    {type:'line',label:'CVR',data:dates.map(d=>bd[d].clk?bd[d].conv/bd[d].clk*100:null),borderColor:'#f59e0b',borderWidth:2,pointRadius:1.5,tension:.4,yAxisID:'y1'}
+    {type:'bar',label:'CTR',data:dates.map(d=>bd[d].imp?bd[d].clk/bd[d].imp*100:null),backgroundColor:'#bfdbfe',yAxisID:'y',datalabels:kdlF('#1d4ed8',v=>v.toFixed(1)+'%','start')},
+    {type:'line',label:'CVR',data:dates.map(d=>bd[d].clk?bd[d].conv/bd[d].clk*100:null),borderColor:'#f59e0b',borderWidth:2,pointRadius:1.5,tension:.4,yAxisID:'y1',datalabels:kdlF('#b45309',v=>v.toFixed(2)+'%','top')}
   ]},options:lineOpts(v=>v.toFixed(1)+'%',v=>v.toFixed(2)+'%')});
   mk('c8',{data:{labels:L,datasets:[
-    {type:'bar',label:'NMV Total',data:g('nmv'),backgroundColor:'#bfdbfe',yAxisID:'y'},
-    {type:'line',label:'%NMV from Ads',data:dates.map(d=>bd[d].nmv?bd[d].nmvAds/bd[d].nmv*100:null),borderColor:'#1a1f36',borderWidth:2,pointRadius:1.5,tension:.4,yAxisID:'y1'}
+    {type:'bar',label:'NMV Total',data:g('nmv'),backgroundColor:'#bfdbfe',yAxisID:'y',datalabels:kdlF('#1d4ed8',v=>fC(v),'start')},
+    {type:'line',label:'%NMV from Ads',data:dates.map(d=>bd[d].nmv?bd[d].nmvAds/bd[d].nmv*100:null),borderColor:'#1a1f36',borderWidth:2,pointRadius:1.5,tension:.4,yAxisID:'y1',datalabels:kdlF('#1a1f36',v=>v.toFixed(0)+'%','top')}
   ]},options:lineOpts(v=>fC(v),v=>v.toFixed(0)+'%')});
 
   // ---- Detail by Date (mỗi chỉ số kèm %MoM riêng: ▲▼ + màu) ----
@@ -1452,8 +1544,8 @@ function render(){
       +`<td style="${gradAmber(o.cost,aSpd[0],aSpd[1])}">${fInt(o.cost)}</td>${momTd(x.c7,x.c6k,true)}`
       +`<td style="${gradMM(tac,aTac[0],aTac[1],-1)}">${fPct(tac,1)}</td>`
       +`<td style="${gradMM(ro,aRoas[0],aRoas[1],1)}">${fR(ro)}</td>`
-      +`<td style="${bandStyle(nmvBand(g))}">${g==null?'—':fPct(g,0)}</td>`
-      +`<td style="${bandStyle(tacBand(tacR))}">${fPct(tacR,0)}</td>${actCell(g,tacR)}`
+      +`<td style="${bandText(nmvBand(g))}">${g==null?'—':fPct(g,0)}</td>`
+      +`<td style="${bandText(tacBand(tacR))}">${fPct(tacR,0)}</td>${actCell(g,tacR)}`
       +`<td>${fC(o.imp)}</td><td style="${gradMM(ctr_,aCtr[0],aCtr[1],1)}">${fPct(ctr_,2)}</td><td style="${gradMM(cvr_,aCvr[0],aCvr[1],1)}">${fPct(cvr_,2)}</td></tr>`; });
   { // Total: mọi tỉ lệ tính lại từ tổng tử/mẫu (KHÔNG lấy trung bình các dòng)
     const tac=AT.cost/AT.nmv, ro=AT.nmvAds/AT.cost, ctr_=AT.clk/AT.imp, cvr_=AT.conv/AT.clk;
@@ -1476,8 +1568,13 @@ function render(){
   const tMap={}; tyRows.forEach(r=>{ const k=r[2]; if(!tMap[k])tMap[k]={cost:0,nmvAds:0}; tMap[k].cost+=r[7]; tMap[k].nmvAds+=r[12]; });
   const tArr=Object.entries(tMap).sort((a,b)=>b[1].cost-a[1].cost);
   mk('c9',{data:{labels:tArr.map(t=>D.types[t[0]]),datasets:[
-    {type:'bar',label:'Spend',data:tArr.map(t=>t[1].cost),backgroundColor:'#93c5fd',yAxisID:'y'},
-    {type:'line',label:'ROAS',data:tArr.map(t=>t[1].cost?t[1].nmvAds/t[1].cost:null),borderColor:'#f59e0b',borderWidth:2,pointRadius:2,tension:0,yAxisID:'y1'}
+    {type:'bar',label:'Spend',data:tArr.map(t=>t[1].cost),backgroundColor:'#93c5fd',yAxisID:'y',
+      datalabels:{display:true,anchor:'end',clamp:true,color:'#1e40af',font:{size:6.5,weight:700},formatter:v=>fC(v),
+        align:c=>{ const d=c.dataset.data.filter(v=>v!=null); const mx=Math.max.apply(null,d);
+          return c.dataset.data[c.dataIndex]>=mx*0.15?'start':'end'; }}},
+    {type:'line',label:'ROAS',data:tArr.map(t=>t[1].cost?t[1].nmvAds/t[1].cost:null),borderColor:'#f59e0b',borderWidth:2,tension:0,yAxisID:'y1',
+      pointRadius:c=>isExt(c)?4.5:2.5,pointBackgroundColor:c=>extClr(c,'#f59e0b'),pointBorderColor:c=>extClr(c,'#f59e0b'),
+      datalabels:{display:c=>isExt(c),formatter:v=>fR(v),color:c=>extClr(c,'#f59e0b'),font:{size:7,weight:900},anchor:'end',align:'top',clip:false}}
   ]},options:{plugins:{legend:{labels:{font:{size:7},boxWidth:10}}},scales:{x:{ticks:{font:{size:6},maxRotation:60,minRotation:40}},y:{ticks:{font:{size:7},callback:v=>fC(v)}},y1:{position:'right',ticks:{font:{size:7}},grid:{drawOnChartArea:false}}},responsive:true,maintainAspectRatio:false,animation:false}});
 
   // Product
@@ -1520,8 +1617,8 @@ function render(){
       +`<td style="${gradAmber(o.cost,pSpd[0],pSpd[1])}">${fInt(o.cost)}</td>${momTd(x.c7,x.c6k,true)}`
       +`<td style="${gradMM(tac,pTac[0],pTac[1],-1)}">${fPct(tac,1)}</td>`
       +`<td style="${gradMM(ro,pRoas[0],pRoas[1],1)}">${fR(ro)}</td>`
-      +`<td style="${bandStyle(nmvBand(g))}">${g==null?'—':fPct(g,0)}</td>`
-      +`<td style="${bandStyle(tacBand(tacR))}">${fPct(tacR,0)}</td>${actCell(g,tacR)}`
+      +`<td style="${bandText(nmvBand(g))}">${g==null?'—':fPct(g,0)}</td>`
+      +`<td style="${bandText(tacBand(tacR))}">${fPct(tacR,0)}</td>${actCell(g,tacR)}`
       +`<td>${fC(o.imp)}</td><td style="${gradMM(ctr_,pCtr[0],pCtr[1],1)}">${fPct(ctr_,2)}</td><td style="${gradMM(cvr_,pCvr[0],pCvr[1],1)}">${fPct(cvr_,2)}</td></tr>`; });
   { // Total: tỉ lệ tính lại từ tổng tử/mẫu
     const tac=PT.cost/PT.nmv, ro=PT.nmvAds/PT.cost, ctr_=PT.clk/PT.imp, cvr_=PT.conv/PT.clk;
@@ -1585,9 +1682,29 @@ function render(){
   // Month summary
   h='<thead><tr><th>Month</th><th>Spend</th><th>NMV Ads</th><th>NMV Total</th><th>%NMV Ads</th><th>Orders</th><th>Conv.</th><th>TACOS</th><th>ROAS</th></tr></thead><tbody>';
   let M={cost:0,nmvAds:0,nmv:0,o:0,conv:0};
-  ['2026-06','2026-07'].forEach(m=>{ const s=sumRows(dateRows(m),MO);
+  const moList=['2026-06','2026-07'];
+  moList.forEach((m,mi)=>{ const rowsM=dateRows(m); const s=sumRows(rowsM,MO);
     for(const kk in M)M[kk]+=s[kk];
-    h+=`<tr><td>${m==='2026-06'?'6/2026':'7/2026 (MTD)'}</td><td>${fInt(s.cost)}</td><td>${fInt(s.nmvAds)}</td><td>${fInt(s.nmv)}</td><td>${fPct(s.nmvAds/s.nmv,1)}</td><td>${fInt(s.o)}</td><td>${fInt(s.conv)}</td><td>${fPct(s.cost/s.nmv,2)}</td><td>${fR(s.nmvAds/s.cost)}</td></tr>`; });
+    // tô xanh/đỏ so với CÙNG KỲ tháng trước (cắt tháng trước theo ngày dữ liệu max của tháng này)
+    let b=null, dmax=0;
+    if(mi>0 && rowsM.length){
+      dmax=Math.max.apply(null,rowsM.map(r=>+r[0].slice(8,10)));
+      const rb=V.byDate.filter(r=>r[0].slice(0,7)===moList[mi-1] && +r[0].slice(8,10)<=dmax && passF(r[1],r[2],r[3]));
+      if(rb.length) b=sumRows(rb,MO);
+    }
+    const cc=(cur,base,inv)=>{ if(!b||base==null||!isFinite(base)||base===0||cur==null||!isFinite(cur)) return '';
+      const good=inv?cur<base:cur>base; return `color:${good?'#16a34a':'#dc2626'};font-weight:700;`; };
+    const isMtd=m===maxDate.slice(0,7);
+    const lbl=(+m.slice(5,7))+'/'+m.slice(0,4)+(isMtd?' (MTD)':'');
+    h+=`<tr${b?` title="Màu: so CÙNG KỲ tháng trước (ngày 1–${dmax}) · xanh = tốt hơn, đỏ = kém hơn"`:''}><td>${lbl}</td>`
+      +`<td style="${cc(s.cost,b?b.cost:null,true)}">${fInt(s.cost)}</td>`
+      +`<td style="${cc(s.nmvAds,b?b.nmvAds:null)}">${fInt(s.nmvAds)}</td>`
+      +`<td style="${cc(s.nmv,b?b.nmv:null)}">${fInt(s.nmv)}</td>`
+      +`<td>${fPct(s.nmvAds/s.nmv,1)}</td>`
+      +`<td style="${cc(s.o,b?b.o:null)}">${fInt(s.o)}</td>`
+      +`<td style="${cc(s.conv,b?b.conv:null)}">${fInt(s.conv)}</td>`
+      +`<td style="${cc(s.cost/s.nmv,b?b.cost/b.nmv:null,true)}">${fPct(s.cost/s.nmv,2)}</td>`
+      +`<td style="${cc(s.nmvAds/s.cost,b?b.nmvAds/b.cost:null)}">${fR(s.nmvAds/s.cost)}</td></tr>`; });
   h+=`<tr class="tot"><td>Total</td><td>${fInt(M.cost)}</td><td>${fInt(M.nmvAds)}</td><td>${fInt(M.nmv)}</td><td>${fPct(M.nmvAds/M.nmv,1)}</td><td>${fInt(M.o)}</td><td>${fInt(M.conv)}</td><td>${fPct(M.cost/M.nmv,2)}</td><td>${fR(M.nmvAds/M.cost)}</td></tr></tbody>`;
   $('tblMonth').innerHTML=h;
 
@@ -1612,8 +1729,8 @@ function stateGet(){ return {m:mSel,f:cFrom,t:cTo,dv:dSel,
   sh:$('fShop').value,ty:$('fType').value,tr:$('fTier').value,
   cf:JSON.parse(JSON.stringify(cf)), s:JSON.parse(JSON.stringify(sortState))}; }
 function stateSet(s){
-  mSel=s.m||'All'; cFrom=s.f||null; cTo=s.t||null;
-  dSel=s.dv||'All'; fillShopSelect();
+  mSel=s.m||'2026-07'; cFrom=s.f||null; cTo=s.t||null;     // thiếu trường -> về mặc định mới (T7 + CPD)
+  dSel=(s.dv!==undefined&&s.dv!==null)?s.dv:'0'; fillShopSelect();
   $('dFrom').value=cFrom||''; $('dTo').value=cTo||'';
   $('fShop').value=s.sh||'All'; $('fType').value=s.ty||'All'; $('fTier').value=s.tr||'All';
   for(const k in cf) delete cf[k]; if(s.cf) for(const k in s.cf) cf[k]=s.cf[k];
@@ -1646,7 +1763,10 @@ function bmRender(){
 bmRender();
 (function bootstrap(){
   const o=bmLoad();
-  if(o.def){ const e=o.list.find(x=>x.name===o.def); if(e){ stateSet(e.state); return; } }
+  // chỉ tự áp bookmark ★ nếu state có trường dv (bookmark đời cũ, lưu trước khi có division,
+  // sẽ kéo dashboard về All/All -> bỏ qua, dùng mặc định T7 + CPD)
+  if(o.def){ const e=o.list.find(x=>x.name===o.def);
+    if(e && e.state && e.state.dv!==undefined){ stateSet(e.state); return; } }
   render();
 })();
 </script>
@@ -1671,6 +1791,9 @@ bmRender();
 #focusBody .fbtn{display:none;}
 /* chốt chặn: canvas không bao giờ được chống phình lưới (canvas blowout) */
 .card canvas{max-width:100% !important;}
+/* in đậm tên brand ở các bảng brand + pie legend */
+#tblRoi tbody td:first-child,#tblTarget tbody td:first-child,#tblRunrate tbody td:first-child{font-weight:700;color:#414042;}
+#pieLeg .pl{font-weight:600;color:#414042;}
 /* sao tiềm năng scale: lớp vàng đè lên lớp xám, cắt theo %width -> vẽ được nửa sao */
 .stars{position:relative;display:inline-block;font-size:9.5px;line-height:1;letter-spacing:.5px;color:#d1d5db;}
 .stars .stfg{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#f59e0b;}
