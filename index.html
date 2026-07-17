@@ -788,6 +788,22 @@ function kdlNum(clr,pos){ return {
   font:c=>({size:6.5,weight:isExt(c)?900:700}),
   anchor:'end', align:pos||'top', offset:0, clip:false }; }
 const charts={};
+// ---- hiệu ứng xuất hiện: chart animate 1 LẦN khi lọt vào khung nhìn (load/trượt tới) ----
+// cross-filter & re-render vẫn tức thì (animation:false) — chỉ lần lộ diện đầu tiên có hiệu ứng.
+const ANIM_DONE=new Set();
+const animIO=('IntersectionObserver' in window)?new IntersectionObserver(es=>{
+  es.forEach(en=>{
+    if(!en.isIntersecting) return;
+    const cv=en.target; animIO.unobserve(cv);
+    const ch=Chart.getChart(cv); if(!ch) return;
+    if(ANIM_DONE.has(cv.id)) return; ANIM_DONE.add(cv.id);
+    try{
+      ch.options.animation={duration:750,easing:'easeOutQuart'};
+      ch.reset(); ch.update();
+      setTimeout(()=>{ try{ ch.options.animation=false; }catch(e){} },850);
+    }catch(e){}
+  });
+},{threshold:0.25}):null;
 function mk(id,cfg){
   try{
     // line luôn vẽ ĐÈ LÊN cột: order thấp -> Chart.js vẽ sau cùng -> nằm trên
@@ -799,6 +815,8 @@ function mk(id,cfg){
     charts[id]=new Chart($(id),cfg);
     // nếu chart này đang nằm trong Focus mode (cross-filter làm render lại) -> scale font lại
     if(typeof FOC!=='undefined' && FOC.card && FOC.card.contains($(id))) focScale(charts[id],true);
+    // đăng ký hiệu ứng xuất hiện (chỉ chạy 1 lần cho mỗi chart)
+    if(animIO && !ANIM_DONE.has(id)) animIO.observe($(id));
   }catch(e){ console.error('Chart "'+id+'" lỗi:',e.message); }               // 1 chart hỏng không được làm chết render()
 }
 function lineOpts(yF,y1F){ const sc={x:{ticks:{font:{size:6}}},y:{ticks:{font:{size:7},callback:yF}}};
