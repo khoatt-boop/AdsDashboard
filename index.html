@@ -234,7 +234,7 @@ th.sactive{background:#0f1424;}
       <div class="hdr-meta">Ads từ <b>Raw_Ads</b> · NMV/Product/Creator/Tier từ <b>Raw_Video Admin</b> (join post_id ↔ content_id) &nbsp;|&nbsp; <span id="hdrRange"></span></div>
     </div>
     <div class="updchip" title="Thời điểm dashboard được build lại từ 2 sheet nguồn. Pipeline tự chạy 10:30 sáng mỗi ngày.">
-      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 15:16</b></span>
+      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 15:28</b></span>
     </div>
   </div>
   <div class="tab-row">
@@ -252,6 +252,10 @@ th.sactive{background:#0f1424;}
   <div class="fi"><label>Shop</label><select id="fShop" onchange="render()"><option value="All">All</option></select></div>
   <div class="fi"><label>Type of Content</label><select id="fType" onchange="render()"><option value="All">All</option></select></div>
   <div class="fi"><label>Creator Tier</label><select id="fTier" onchange="render()"><option value="All">All</option></select></div>
+  <div class="fi"><label>Product</label><select id="fProd" onchange="applyEnt('prod',this.value)"><option value="All">All</option></select></div>
+  <div class="fi"><label>Creator</label><select id="fCreator" onchange="applyEnt('creator',this.value)"><option value="All">All</option></select></div>
+  <div class="fi"><label>Loại ngày</label><select id="fDayType" onchange="applyDayType(this.value)" title="Ngày đôi = ngày trùng tháng (6/6, 7/7…) và ±1 ngày · Giữa tháng = 14–16 · Ngày lương = 24–26 · Ngày thường = còn lại">
+      <option value="All">All</option><option value="double">🔥 Ngày đôi (±1)</option><option value="mid">📅 Giữa tháng (14–16)</option><option value="pay">💰 Ngày lương (24–26)</option><option value="norm">Ngày thường</option></select></div>
   <div class="fi"><label>Content ID <span style="font-weight:400;color:#9ca3af;">(dán nhiều ID được)</span></label><input type="text" id="fVid" placeholder="Dán 1 hoặc nhiều content ID, cách nhau bằng dấu phẩy / xuống dòng…" title="Có thể dán cả cột từ Excel: mỗi ID 1 dòng, hoặc ngăn cách bằng dấu phẩy, chấm phẩy, khoảng trắng." oninput="applyVid()" list="vidList"><datalist id="vidList"></datalist></div>
   <span id="vidHint" style="font-size:7.5px;align-self:flex-end;padding-bottom:2px;"></span>
   <div class="fi" style="margin-left:auto;"><label>&nbsp;</label><span style="font-size:8px;color:#9ca3af;font-style:italic;">Click 1 dòng bảng (Product/Creator/Angle/Tier) để <b>cross-filter toàn dashboard</b> · click lại để bỏ</span></div>
@@ -507,7 +511,7 @@ function setDiv(d){
   dSel=d;
   for(const k in cf) delete cf[k];      // cross-filter cũ có thể thuộc division khác -> xoá
   $('fVid').value=''; $('vidHint').textContent='';
-  fillShopSelect();
+  fillShopSelect(); fillEntSelects();
   render();
 }
 function fillShopSelect(){
@@ -735,12 +739,12 @@ function syncVidInput(){
   }
 }
 
-fillShopSelect();
+fillShopSelect();   // fillEntSelects() để render() gọi (cần dSel + khai báo bên dưới)
 D.types.forEach((t,i)=>{ const o=document.createElement('option');o.value=i;o.textContent=t;$('fType').appendChild(o); });
 D.tiers.forEach((t,i)=>{ const o=document.createElement('option');o.value=i;o.textContent=t;$('fTier').appendChild(o); });
 
 function setMonth(m){ mSel=m; cFrom=cTo=null; $('dFrom').value=''; $('dTo').value=''; render(); }
-function clearAll(){ mSel='All'; cFrom=cTo=null; $('dFrom').value=''; $('dTo').value=''; $('fShop').value='All'; $('fType').value='All'; $('fTier').value='All'; $('fVid').value=''; $('vidHint').textContent=''; for(const k in cf) delete cf[k]; render(); }
+function clearAll(){ mSel='All'; cFrom=cTo=null; $('dFrom').value=''; $('dTo').value=''; $('fShop').value='All'; $('fType').value='All'; $('fTier').value='All'; $('fVid').value=''; $('vidHint').textContent=''; $('fProd').value='All'; $('fCreator').value='All'; dtSel='All'; $('fDayType').value='All'; for(const k in cf) delete cf[k]; render(); }
 
 const fInt = n => n==null||isNaN(n) ? '—' : Math.round(n).toLocaleString('en-US');
 function fC(n){ if(n==null||isNaN(n))return '—'; const a=Math.abs(n);
@@ -821,6 +825,40 @@ function dName(lv,txt,key,leaf){
     +`<span class="dtxt">${esc(txt.length>44?txt.slice(0,44)+'…':txt)}</span></td>`;
 }
 
+// ================= FILTER: Product · Creator · Loại ngày =================
+// Product/Creator dùng chung cơ chế cross-filter (cf) nên chọn ở dropdown hay click bảng đều như nhau.
+function applyEnt(dim,val){ if(val==='All') delete cf[dim]; else cf[dim]=+val; render(); }
+// Loại ngày: lọc theo TÍNH CHẤT của ngày trong tháng (áp cho mọi bảng/chart/drill-down)
+let dtSel='All';
+function applyDayType(v){ dtSel=v; render(); }
+function dayOk(iso){
+  if(dtSel==='All') return true;
+  const d=+iso.slice(8,10), m=+iso.slice(5,7);
+  const dbl=(d===m||d===m-1||d===m+1), mid=(d>=14&&d<=16), pay=(d>=24&&d<=26);
+  if(dtSel==='double') return dbl;
+  if(dtSel==='mid')    return mid;
+  if(dtSel==='pay')    return pay;
+  if(dtSel==='norm')   return !dbl&&!mid&&!pay;
+  return true;
+}
+const DTLBL={All:'',double:'Ngày đôi (±1)',mid:'Giữa tháng (14–16)',pay:'Ngày lương (24–26)',norm:'Ngày thường'};
+// đổ option Product/Creator theo division đang xem, sắp theo NMV giảm dần (cái to nằm trên)
+function fillEntSelect(id,dim,names,col){
+  const cur=$(id).value;
+  const agg=new Map();
+  for(const r of D.facts){ if(!divOk(r[1])) continue; agg.set(r[col],(agg.get(r[col])||0)+r[8]); }
+  const list=[...agg.entries()].sort((a,b)=>b[1]-a[1]);
+  $(id).innerHTML='<option value="All">All</option>'
+    + list.map(([k,v])=>`<option value="${k}">${esc(names[k].length>52?names[k].slice(0,52)+'…':names[k])}</option>`).join('');
+  $(id).value=[...$(id).options].some(o=>o.value===cur)?cur:'All';
+}
+let entFilledFor=null;   // chỉ đổ lại option khi đổi division (danh sách khá dài)
+function fillEntSelects(force){
+  if(!force && entFilledFor===dSel) return;
+  fillEntSelect('fProd','prod',D.products,4); fillEntSelect('fCreator','creator',D.creators,5);
+  entFilledFor=dSel;
+}
+
 // filters
 const shV=()=>$('fShop').value, tyV=()=>$('fType').value, trV=()=>$('fTier').value;
 function passF(shopIdx,typeIdx,tierIdx){
@@ -828,8 +866,8 @@ function passF(shopIdx,typeIdx,tierIdx){
 }
 // byDate row: [0]date,[1]sh,[2]ty,[3]tr, m: 4 o,5 gmv,6 nmv,7 cost,8 conv,9 imp,10 clk,11 vv,12 nmvAds,13 gmvAds,14 rows
 function dateRows(month){
-  if(month==='custom') return V.byDate.filter(r=>(!cFrom||r[0]>=cFrom)&&(!cTo||r[0]<=cTo)&&passF(r[1],r[2],r[3]));
-  return V.byDate.filter(r=>(month==='All'||r[0].slice(0,7)===month)&&passF(r[1],r[2],r[3]));
+  if(month==='custom') return V.byDate.filter(r=>dayOk(r[0])&&(!cFrom||r[0]>=cFrom)&&(!cTo||r[0]<=cTo)&&passF(r[1],r[2],r[3]));
+  return V.byDate.filter(r=>dayOk(r[0])&&(month==='All'||r[0].slice(0,7)===month)&&passF(r[1],r[2],r[3]));
 }
 const MO=4; // metric offset for byDate
 const EO=5; // metric offset for entity cubes (byAngle/Product/Creator)
@@ -840,7 +878,7 @@ function sumRows(rows,off){ const s={o:0,gmv:0,nmv:0,cost:0,conv:0,imp:0,clk:0,v
 const tmDays=D.dates.filter(d=>d.startsWith(TM_M)).map(d=>+d.slice(8,10));
 const maxTmDay=tmDays.length?Math.max.apply(null,tmDays):0;
 const maxJulyDay=maxTmDay;   // alias tên cũ
-function baseRows(){ return V.byDate.filter(r=>r[0].startsWith(LM_M)&&+r[0].slice(8,10)<=maxTmDay&&passF(r[1],r[2],r[3])); }
+function baseRows(){ return V.byDate.filter(r=>dayOk(r[0])&&r[0].startsWith(LM_M)&&+r[0].slice(8,10)<=maxTmDay&&passF(r[1],r[2],r[3])); }
 
 // ---- click-to-sort ----
 const sortState={};
@@ -956,6 +994,7 @@ function lineOpts(yF,y1F){ const sc={x:{ticks:{font:{size:6}}},y:{ticks:{font:{s
   return {plugins:{legend:{labels:{font:{size:7},boxWidth:10}}},scales:sc,responsive:true,maintainAspectRatio:false,animation:false}; }
 
 function inSel(iso){
+  if(!dayOk(iso)) return false;
   if(mSel==='custom') return (!cFrom||iso>=cFrom)&&(!cTo||iso<=cTo);
   return mSel==='All'||iso.slice(0,7)===mSel;
 }
@@ -1543,12 +1582,22 @@ function render(){
   const nShop=D.shops.filter((s,i)=>divOk(i)).length;
   $('divInfo').textContent = (dSel==='All'?'Đang xem cả 2 division':'Đang xem '+D.divisions[+dSel])+' · '+nShop+' brand';
   buildViews();
+  fillEntSelects();
   renderCfBar();
   syncVidInput();
+  // dropdown Product/Creator phản chiếu cross-filter (click bảng cũng làm dropdown đổi theo)
+  $('fProd').value    = (cf.prod!==undefined && !Array.isArray(cf.prod))    ? String(cf.prod)    : 'All';
+  $('fCreator').value = (cf.creator!==undefined && !Array.isArray(cf.creator))? String(cf.creator): 'All';
+  if($('fProd').selectedIndex<0)    $('fProd').value='All';
+  if($('fCreator').selectedIndex<0) $('fCreator').value='All';
   $('tabAll').className='tab '+(mSel==='All'?'tab-a':'tab-i');
   $('tab06').className ='tab '+(mSel===LM_M?'tab-a':'tab-i');
   $('tab07').className ='tab '+(mSel===TM_M?'tab-a':'tab-i');
-  $('timeBadge').textContent = mSel==='custom'?('Tùy chọn: '+ddmm(cFrom||minDate)+' – '+ddmm(cTo||maxDate)):(mSel==='All'?(ddmm(minDate)+' – '+ddmm(maxDate)):(mSel===TM_M?('01/'+TM_M.slice(5,7)+' – '+ddmm(maxDate)+' (MTD)'):('01/'+mSel.slice(5,7)+' – '+monthDays[mSel]+'/'+mSel.slice(5,7)+'/'+mSel.slice(0,4))));
+  const badgeRange = (mSel==='custom') ? ('Tùy chọn: '+ddmm(cFrom||minDate)+' – '+ddmm(cTo||maxDate))
+    : (mSel==='All') ? (ddmm(minDate)+' – '+ddmm(maxDate))
+    : (mSel===TM_M)  ? ('01/'+TM_M.slice(5,7)+' – '+ddmm(maxDate)+' (MTD)')
+    : ('01/'+mSel.slice(5,7)+' – '+monthDays[mSel]+'/'+mSel.slice(5,7)+'/'+mSel.slice(0,4));
+  $('timeBadge').innerHTML = (dtSel!=='All' ? '<span style="color:#b45309;font-weight:800;">'+DTLBL[dtSel]+'</span> · ' : '') + badgeRange;
 
   renderPending();
 
@@ -1571,8 +1620,8 @@ function render(){
   }}); });
   const loading=tgtNmv?A.nmv/tgtNmv:null, rrPct=tgtToDate?A.nmv/tgtToDate:null;
   // đang lọc theo chiều KHÔNG chia nhỏ được target (Type/Tier/Product/…): cảnh báo % so target cả brand
-  const tgtSliced = tyV()!=='All' || trV()!=='All' || Object.keys(cf).some(d=>d!=='shop');
-  const tgtWarn = tgtSliced?' <span style="color:#dc2626;font-weight:700;" title="Actual đang bị cắt theo Type/Tier/Product/Creator/Angle/Content ID — target không chia nhỏ được theo các chiều đó nên % này so với target CẢ brand, sẽ thấp giả tạo. Bỏ các filter đó để đọc đúng tiến độ.">⚠ target=cả brand</span>':'';
+  const tgtSliced = tyV()!=='All' || trV()!=='All' || dtSel!=='All' || Object.keys(cf).some(d=>d!=='shop');
+  const tgtWarn = tgtSliced?' <span style="color:#dc2626;font-weight:700;" title="Actual đang bị cắt theo Type/Tier/Loại ngày/Product/Creator/Angle/Content ID — target không chia nhỏ được theo các chiều đó nên % này so với target CẢ brand, sẽ thấp giả tạo. Bỏ các filter đó để đọc đúng tiến độ.">⚠ target=cả brand</span>':'';
   // thu tu: 3 card den (tru cot) -> 2 card target (do nhat) -> 3 card trang ra ngoai cung
   const kpis=[
     {hl:1,lb:'NMV Total',vl:fC(A.nmv),s1:'Orders: <strong>'+fInt(A.o)+'</strong>'+(function(){ const p=pendInfo(); return p?
@@ -1986,13 +2035,14 @@ const BMKEY='cpd_bm_v1';
 function bmLoad(){ try{ return JSON.parse(localStorage.getItem(BMKEY))||{list:[],def:null}; }catch(e){ return {list:[],def:null}; } }
 function bmStore(o){ try{ localStorage.setItem(BMKEY,JSON.stringify(o)); }catch(e){ alert('Trình duyệt chặn lưu localStorage nên không lưu được bookmark.'); } }
 function stateGet(){ return {m:mSel,f:cFrom,t:cTo,dv:dSel,
-  sh:$('fShop').value,ty:$('fType').value,tr:$('fTier').value,
+  sh:$('fShop').value,ty:$('fType').value,tr:$('fTier').value,dt:dtSel,
   cf:JSON.parse(JSON.stringify(cf)), s:JSON.parse(JSON.stringify(sortState))}; }
 function stateSet(s){
   mSel=s.m||TM_M; cFrom=s.f||null; cTo=s.t||null;     // thiếu trường -> về mặc định (tháng gần nhất + CPD)
-  dSel=(s.dv!==undefined&&s.dv!==null)?s.dv:'0'; fillShopSelect();
+  dSel=(s.dv!==undefined&&s.dv!==null)?s.dv:'0'; fillShopSelect(); fillEntSelects();
   $('dFrom').value=cFrom||''; $('dTo').value=cTo||'';
   $('fShop').value=s.sh||'All'; $('fType').value=s.ty||'All'; $('fTier').value=s.tr||'All';
+  dtSel=s.dt||'All'; $('fDayType').value=dtSel;
   for(const k in cf) delete cf[k]; if(s.cf) for(const k in s.cf) cf[k]=s.cf[k];
   for(const k in sortState) delete sortState[k]; if(s.s) for(const k in s.s) sortState[k]=s.s[k];
   render();
