@@ -16,6 +16,19 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1f36;fo
 .hdr h1{font-size:15px;font-weight:800;color:#414042;letter-spacing:.2px;}
 .hdr h1 .accent{color:#EE3124;}
 .hdr-meta{font-size:8.5px;color:#9ca3af;margin-top:1px;}
+/* drill-down: nút +/− và dòng con */
+.dbtn{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;margin-right:5px;
+  border:1px solid #cbd5e1;border-radius:3px;background:#fff;color:#475569;font-size:11px;font-weight:800;
+  line-height:1;cursor:pointer;vertical-align:middle;user-select:none;}
+.dbtn:hover{border-color:#EE3124;color:#EE3124;background:#fef2f2;}
+.dbtn.op{background:#EE3124;border-color:#EE3124;color:#fff;}
+.dleaf{display:inline-block;width:13px;margin-right:5px;color:#cbd5e1;text-align:center;vertical-align:middle;}
+tr.dlv1>td{background:#f8fafc;}
+tr.dlv2>td{background:#f1f5f9;font-style:italic;}
+tr.dlv1:hover>td,tr.dlv2:hover>td{background:#e0f2fe;}
+td.dcell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+tr.dlv1 .dtxt{color:#334155;}
+tr.dlv2 .dtxt{color:#64748b;font-size:9px;}
 /* chip thời điểm cập nhật data (build time) */
 .updchip{display:inline-flex;align-items:center;gap:5px;margin-left:14px;padding:5px 11px;border-radius:999px;
   background:#dcfce7;border:1px solid #86efac;color:#15803d;font-size:10px;font-weight:700;white-space:nowrap;}
@@ -221,7 +234,7 @@ th.sactive{background:#0f1424;}
       <div class="hdr-meta">Ads từ <b>Raw_Ads</b> · NMV/Product/Creator/Tier từ <b>Raw_Video Admin</b> (join post_id ↔ content_id) &nbsp;|&nbsp; <span id="hdrRange"></span></div>
     </div>
     <div class="updchip" title="Thời điểm dashboard được build lại từ 2 sheet nguồn. Pipeline tự chạy 10:30 sáng mỗi ngày.">
-      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 14:51</b></span>
+      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 15:08</b></span>
     </div>
   </div>
   <div class="tab-row">
@@ -733,6 +746,45 @@ function renderPending(){
   el.style.display='';
 }
 
+// ================= DRILL-DOWN (Product → Angle → Content ID) =================
+// DRILL giữ các key đang mở, ví dụ 'p:12' (product 12) hoặc 'p:12|a:5' (angle 5 trong product 12)
+const DRILL=new Set();
+function toggleDrill(k){
+  if(DRILL.has(k)) DRILL.delete(k); else DRILL.add(k);
+  const sc=[]; document.querySelectorAll('.tblwrap').forEach(w=>sc.push(w.scrollTop));
+  render();
+  document.querySelectorAll('.tblwrap').forEach((w,i)=>{ if(sc[i]!=null) w.scrollTop=sc[i]; });
+}
+function dBtn(k){ const op=DRILL.has(k);
+  return `<span class="dbtn${op?' op':''}" onclick="event.stopPropagation();toggleDrill('${k}')" title="${op?'Thu gọn':'Mở rộng'}">${op?'−':'+'}</span>`; }
+// gom fact theo 1 chiều, cố định các chiều cha; tôn trọng mọi bộ lọc + cross-filter đang bật
+function drillAgg(fixed,groupCol,exclDim){
+  const m=new Map();
+  for(const r of D.facts){
+    if(!inSel(D.dates[r[0]])) continue;
+    if(!divOk(r[1])) continue;
+    if(shV()!=='All'&&r[1]!=+shV()) continue;
+    if(tyV()!=='All'&&r[2]!=+tyV()) continue;
+    if(trV()!=='All'&&r[3]!=+trV()) continue;
+    if(!cfPass(r,exclDim)) continue;
+    let ok=true; for(const c in fixed){ if(r[c]!==fixed[c]){ ok=false; break; } }
+    if(!ok) continue;
+    const k=r[groupCol]; let a=m.get(k);
+    if(!a){ a={nmv:0,nmvR:0,nmvAds:0,cost:0,conv:0,imp:0,clk:0,vv:0,o:0,vid:new Set()}; m.set(k,a); }
+    a.nmv+=r[8]; a.cost+=r[9]; a.nmvAds+=r[10]; a.conv+=r[11]; a.imp+=r[12]; a.clk+=r[13];
+    a.vv+=r[14]; a.o+=r[15]; a.nmvR+=(r[18]||0); a.vid.add(r[7]);
+  }
+  return [...m.entries()].sort((a,b)=>b[1].nmv-a[1].nmv);
+}
+const eTd=n=>'<td></td>'.repeat(n);
+// ô tên của dòng con: thụt lề theo cấp, có dấu +/− nếu còn cấp dưới
+function dName(lv,txt,key,leaf){
+  const pad=8+lv*14;
+  return `<td class="dcell" style="padding-left:${pad}px;max-width:300px;" title="${esc(txt)}">`
+    +(leaf?'<span class="dleaf">•</span>':dBtn(key))
+    +`<span class="dtxt">${esc(txt.length>44?txt.slice(0,44)+'…':txt)}</span></td>`;
+}
+
 // filters
 const shV=()=>$('fShop').value, tyV=()=>$('fType').value, trV=()=>$('fTier').value;
 function passF(shopIdx,typeIdx,tierIdx){
@@ -783,7 +835,10 @@ function sortTable(id){
 function makeSortable(id){
   const table=$(id); if(!table)return;
   table.querySelectorAll('thead th').forEach((th,ci)=>{ th.onclick=()=>{
-    const st=sortState[id]; const dir=(st&&st.col===ci)?-st.dir:-1; sortState[id]={col:ci,dir}; sortTable(id);
+    const st=sortState[id]; const dir=(st&&st.col===ci)?-st.dir:-1; sortState[id]={col:ci,dir};
+    // đang mở drill-down mà sort thì dòng con sẽ rời khỏi dòng cha -> thu gọn hết rồi mới sort
+    if(DRILL.size && table.querySelector('tr.dlv1')){ DRILL.clear(); render(); return; }
+    sortTable(id);
   };});
   if(sortState[id]) sortTable(id);
 }
@@ -1316,13 +1371,13 @@ function buildMix(){
 // ---- ROI & TACOS Total overview block ----
 function buildRoi(){
   const rws=V.byShop.filter(r=>inSel(r[0])&&passF(r[1],r[2],r[3]));
-  const m={}; rws.forEach(r=>{ const k=r[1]; if(!m[k])m[k]={nmv:0,cost:0,nmvAds:0}; m[k].nmv+=r[6]; m[k].cost+=r[7]; m[k].nmvAds+=r[12]; });
+  const m={}; rws.forEach(r=>{ const k=r[1]; if(!m[k])m[k]={nmv:0,cost:0,nmvAds:0,nmvR:0}; m[k].nmv+=r[6]; m[k].cost+=r[7]; m[k].nmvAds+=r[12]; m[k].nmvR+=r[MO+IDX.nmvR]; });
   const es=Object.entries(m).sort((a,b)=>b[1].nmv-a[1].nmv);
   const aRoi=mm(es.map(e=>e[1].nmvR/e[1].cost)), aRoas=mm(es.map(e=>e[1].nmvAds/e[1].cost)), aTac=mm(es.map(e=>e[1].cost/e[1].nmvR)),
         rNmv=mm(es.map(e=>e[1].nmv)), rNmvA=mm(es.map(e=>e[1].nmvAds)), rSpd=mm(es.map(e=>e[1].cost));
   let h='<thead><tr><th>Brand</th><th>NMV Total</th><th>Ads Cost</th><th>NMV Ads</th><th>ROI</th><th>ROAS</th><th>TACOS Total</th></tr></thead><tbody>';
-  let T={nmv:0,cost:0,nmvAds:0};
-  es.forEach(([k,o])=>{ T.nmv+=o.nmv;T.cost+=o.cost;T.nmvAds+=o.nmvAds;
+  let T={nmv:0,cost:0,nmvAds:0,nmvR:0};
+  es.forEach(([k,o])=>{ T.nmv+=o.nmv;T.cost+=o.cost;T.nmvAds+=o.nmvAds;T.nmvR+=o.nmvR;
     const roi=o.nmvR/o.cost, ro=o.nmvAds/o.cost, tac=o.cost/o.nmvR;
     const sel=cf.shop===+k?' cfsel':'';
     h+=`<tr class="clk${sel}" onclick="toggleCf('shop',${k})"><td>${brandLogo(+k)}${D.shops[k]}</td><td style="${gradAmber(o.nmv,rNmv[0],rNmv[1])}">${fInt(o.nmv)}</td><td style="${gradAmber(o.cost,rSpd[0],rSpd[1])}">${fInt(o.cost)}</td><td>${fInt(o.nmvAds)}</td><td style="${gradMM(roi,aRoi[0],aRoi[1],1)}">${fR(roi)}</td><td style="${gradMM(ro,aRoas[0],aRoas[1],1)}">${fR(ro)}</td><td style="${gradMM(tac,aTac[0],aTac[1],-1)}">${fPct(tac,2)}</td></tr>`; });
@@ -1342,15 +1397,15 @@ function buildRoi(){
     const b7={};
     V.byShop.forEach(r=>{ if(!passF(r[1],r[2],r[3]))return;
       const w=L7.has(r[0])?1:(P7.has(r[0])?0:null); if(w==null)return;
-      if(!b7[r[1]])b7[r[1]]={n1:0,c1:0,n0:0,c0:0};
-      const x=b7[r[1]]; if(w){x.n1+=r[6];x.c1+=r[7];}else{x.n0+=r[6];x.c0+=r[7];} });
+      if(!b7[r[1]])b7[r[1]]={n1:0,c1:0,n0:0,c0:0,r1:0,r0:0};
+      const x=b7[r[1]]; if(w){x.n1+=r[6];x.c1+=r[7];x.r1+=r[MO+IDX.nmvR];}else{x.n0+=r[6];x.c0+=r[7];x.r0+=r[MO+IDX.nmvR];} });
     const trendHtml=x=>{ if(!x||!x.n0||!x.n1) return '<span style="color:#9ca3af;">7d —</span>';
       const d=x.n1/x.n0-1, up=d>=0;
-      return `7d NMV <span style="color:${up?'#16a34a':'#dc2626'};font-weight:700;">${up?'▲':'▼'}${Math.abs(Math.round(d*100))}%</span>, TACOS ${fPct(x.c1/x.n1,1)}`; };
+      return `7d NMV <span style="color:${up?'#16a34a':'#dc2626'};font-weight:700;">${up?'▲':'▼'}${Math.abs(Math.round(d*100))}%</span>, TACOS ${x.r1?fPct(x.c1/x.r1,1):'—'}`; };
     // gom brand theo division
     const secs=[];
     [0,1].forEach(dv=>{
-      let lines='', agg={nmv:0,cost:0,tgtTD:0,nmvTgt:0,adsTgt:0,n1:0,n0:0}, inc=[],dec=[];
+      let lines='', agg={nmv:0,nmvR:0,cost:0,tgtTD:0,nmvTgt:0,adsTgt:0,n1:0,n0:0}, inc=[],dec=[];
       es.forEach(([k,o])=>{
         if(D.shopDiv[+k]!==dv) return;
         const b=brandTargets.find(x=>x.shop===+k); if(!b||!o.nmv) return;
@@ -1360,7 +1415,7 @@ function buildRoi(){
         if(!tgtTD||!nmvTgt) return;
         const mtd=o.nmv/nmvTgt, rr=o.nmv/tgtTD, tacA=o.cost/o.nmvR, tacT=adsTgt/nmvTgt;
         const tacHi=tacA>tacT*1.15, tacOk=tacA<=tacT;
-        agg.nmv+=o.nmv; agg.cost+=o.cost; agg.tgtTD+=tgtTD; agg.nmvTgt+=nmvTgt; agg.adsTgt+=adsTgt;
+        agg.nmv+=o.nmv; agg.nmvR+=o.nmvR; agg.cost+=o.cost; agg.tgtTD+=tgtTD; agg.nmvTgt+=nmvTgt; agg.adsTgt+=adsTgt;
         const x=b7[+k]; if(x){agg.n1+=x.n1;agg.n0+=x.n0;}
         if(rr>=1.0&&tacOk) inc.push(b.code);
         if(rr<0.9&&tacHi) dec.push(b.code);
@@ -1556,8 +1611,8 @@ function render(){
   // ---- Detail by Date (mỗi chỉ số kèm %MoM riêng: ▲▼ + màu) ----
   const juneBd={};
   V.byDate.forEach(r=>{ if(r[0].startsWith(LM_M)&&passF(r[1],r[2],r[3])){ const day=r[0].slice(8,10);
-    if(!juneBd[day])juneBd[day]={nmv:0,nmvAds:0,cost:0,imp:0,clk:0,conv:0,o:0}; const x=juneBd[day];
-    x.nmv+=r[6];x.nmvAds+=r[12];x.cost+=r[7];x.imp+=r[9];x.clk+=r[10];x.conv+=r[8];x.o+=r[4]; }});
+    if(!juneBd[day])juneBd[day]={nmv:0,nmvR:0,nmvAds:0,cost:0,imp:0,clk:0,conv:0,o:0}; const x=juneBd[day];
+    x.nmv+=r[6];x.nmvR+=r[MO+IDX.nmvR];x.nmvAds+=r[12];x.cost+=r[7];x.imp+=r[9];x.clk+=r[10];x.conv+=r[8];x.o+=r[4]; }});
   // target NMV/ngày theo phạm vi Shop đang chọn
   function dTgt(iso){ const m=iso.slice(0,7); if(!monthDays[m])return null;
     let t=0; brandTargets.forEach(b=>{ if(b.shop>=0&&divOk(b.shop)&&(shV()==='All'||b.shop==+shV())&&(cf.shop==null||cf.shop===b.shop)&&b.t[m]) t+=b.t[m].nmvT; });
@@ -1651,17 +1706,18 @@ function render(){
     return Math.min(5,Math.max(0.5,Math.round(s*10)/2));
   };
   h='<thead><tr><th style="max-width:250px;">Content Angle</th><th># Content ID</th><th># có Ads</th><th title="Tiềm năng scale: 32% hiệu quả TACOS vs Tgt · 28% đà tăng MoM · 14% CTR · 14% CVR · 12% quy mô Impr.">⭐ Scale</th><th>NMV</th><th>%MoM</th><th>NMV Ads</th><th>%MoM</th><th>Spend</th><th>%MoM</th><th>TACOS</th><th>ROAS</th><th>NMV MoM (RR)</th><th>TACOS vs Tgt</th><th style="text-align:center;">Suggest Action</th><th>Impr.</th><th>CTR</th><th>CVR</th></tr></thead><tbody>';
-  const AT={nmv:0,nmvAds:0,cost:0,conv:0,imp:0,clk:0,n6:0,n7:0,n6k:0,a6k:0,a7:0,c6k:0,c7:0,wT:0,wD:0};
+  const AT={nmv:0,nmvR:0,nmvAds:0,cost:0,conv:0,imp:0,clk:0,n6:0,n7:0,n6k:0,a6k:0,a7:0,c6k:0,c7:0,wT:0,wD:0};
   const ATv=new Set(), ATva=new Set();
   angs.forEach(([k,o])=>{ const nm=D.angles[k], tac=o.cost/o.nmvR, ro=o.nmvAds/o.cost, ctr_=o.clk/o.imp, cvr_=o.conv/o.clk;
     const tt=angTacT(k), g=aGrowth(k), tacR=(tt&&isFinite(tac))?tac/tt:null;
     const x=aM[k]||{}, sel=cf.angle===+k?' cfsel':'';
-    AT.nmv+=o.nmv; AT.nmvAds+=o.nmvAds; AT.cost+=o.cost; AT.conv+=o.conv; AT.imp+=o.imp; AT.clk+=o.clk;
+    AT.nmv+=o.nmv; AT.nmvR+=o.nmvR; AT.nmvAds+=o.nmvAds; AT.cost+=o.cost; AT.conv+=o.conv; AT.imp+=o.imp; AT.clk+=o.clk;
     AT.n6+=x.n6||0; AT.n7+=x.n7||0; AT.n6k+=x.n6k||0; AT.a6k+=x.a6k||0; AT.a7+=x.a7||0; AT.c6k+=x.c6k||0; AT.c7+=x.c7||0;
     if(tt){ AT.wT+=o.nmv*tt; AT.wD+=o.nmv; }
     if(aVid[k]) aVid[k].forEach(v=>ATv.add(v));
     if(aVidAds[k]) aVidAds[k].forEach(v=>ATva.add(v));
-    h+=`<tr class="clk${sel}" onclick="toggleCf('angle',${k})"><td style="max-width:250px;" title="${esc(nm)}">${esc(nm.length>46?nm.slice(0,46)+'…':nm)}</td>`
+    const dkA='a:'+k;
+    h+=`<tr class="clk${sel}" onclick="toggleCf('angle',${k})"><td style="max-width:250px;" title="${esc(nm)}">${dBtn(dkA)}${esc(nm.length>44?nm.slice(0,44)+'…':nm)}</td>`
       +`<td>${aVid[k]?aVid[k].size:0}</td><td>${aVidAds[k]?aVidAds[k].size:0}</td>`
       +`<td style="text-align:center;">${starHtml(scaleStars(o,g,tacR))}</td>`
       +`<td style="${gradAmber(o.nmv,aNmv[0],aNmv[1])}">${fInt(o.nmv)}</td>${momTd(x.n7,x.n6k)}`
@@ -1671,7 +1727,19 @@ function render(){
       +`<td style="${gradMM(ro,aRoas[0],aRoas[1],1)}">${fR(ro)}</td>`
       +`<td style="${bandText(nmvBand(g))}">${g==null?'—':fPct(g,0)}</td>`
       +`<td style="${bandText(tacBand(tacR))}">${fPct(tacR,0)}</td>${actCell(g,tacR)}`
-      +`<td>${fC(o.imp)}</td><td style="${gradMM(ctr_,aCtr[0],aCtr[1],1)}">${fPct(ctr_,2)}</td><td style="${gradMM(cvr_,aCvr[0],aCvr[1],1)}">${fPct(cvr_,2)}</td></tr>`; });
+      +`<td>${fC(o.imp)}</td><td style="${gradMM(ctr_,aCtr[0],aCtr[1],1)}">${fPct(ctr_,2)}</td><td style="${gradMM(cvr_,aCvr[0],aCvr[1],1)}">${fPct(cvr_,2)}</td></tr>`;
+    // ---- cấp 2: Content ID trong angle ----
+    if(DRILL.has(dkA)){
+      drillAgg({6:+k},7,'angle').forEach(([vk,vo])=>{
+        const vt=vo.cost/vo.nmvR, vr=vo.nmvAds/vo.cost;
+        h+=`<tr class="dlv1">`+dName(1,D.videos[vk],'',true)
+          +`<td>1</td><td>${vo.cost>0?1:0}</td>${eTd(1)}`
+          +`<td>${fInt(vo.nmv)}</td>${eTd(1)}<td>${fInt(vo.nmvAds)}</td>${eTd(1)}`
+          +`<td>${fInt(vo.cost)}</td>${eTd(1)}`
+          +`<td>${fPct(vt,1)}</td><td>${fR(vr)}</td>${eTd(3)}`
+          +`<td>${fC(vo.imp)}</td><td>${fPct(vo.clk/vo.imp,2)}</td><td>${fPct(vo.conv/vo.clk,2)}</td></tr>`;
+      });
+    } });
   { // Total: mọi tỉ lệ tính lại từ tổng tử/mẫu (KHÔNG lấy trung bình các dòng)
     const tac=AT.cost/AT.nmvR, ro=AT.nmvAds/AT.cost, ctr_=AT.clk/AT.imp, cvr_=AT.conv/AT.clk;
     const tgt=AT.wD?AT.wT/AT.wD:null, tacR=(tgt&&isFinite(tac))?tac/tgt:null;
@@ -1727,15 +1795,16 @@ function render(){
   const rr7=monthDays[TM_M]/Math.max(1,elapsedDays(TM_M));
   const growth=k=>{ const x=pM[k]; if(!x||!x.n6) return null; return (x.n7*rr7)/x.n6; };
   h='<thead><tr><th style="max-width:300px;">Product</th><th>NMV</th><th>%MoM</th><th>NMV Ads</th><th>%MoM</th><th>Orders</th><th>Spend</th><th>%MoM</th><th>TACOS</th><th>ROAS</th><th>NMV MoM (RR)</th><th>TACOS vs Tgt</th><th style="text-align:center;">Suggest Action</th><th>Impr.</th><th>CTR</th><th>CVR</th></tr></thead><tbody>';
-  const PT={nmv:0,nmvAds:0,cost:0,o:0,conv:0,imp:0,clk:0,n6:0,n7:0,n6k:0,a6k:0,a7:0,c6k:0,c7:0,wT:0,wD:0};
+  const PT={nmv:0,nmvR:0,nmvAds:0,cost:0,o:0,conv:0,imp:0,clk:0,n6:0,n7:0,n6k:0,a6k:0,a7:0,c6k:0,c7:0,wT:0,wD:0};
   prods.forEach(([k,o])=>{ const nm=D.products[k], tac=o.cost/o.nmvR, ro=o.nmvAds/o.cost, ctr_=o.clk/o.imp, cvr_=o.conv/o.clk;
     const si=prodShop(k), bt=si!=null?brandTgt(si):null;
     const g=growth(k), tacR=(bt&&isFinite(tac))?tac/bt.tacT:null;
     const x=pM[k]||{}, sel=cf.prod===+k?' cfsel':'';
-    PT.nmv+=o.nmv; PT.nmvAds+=o.nmvAds; PT.cost+=o.cost; PT.o+=o.o; PT.conv+=o.conv; PT.imp+=o.imp; PT.clk+=o.clk;
+    PT.nmv+=o.nmv; PT.nmvR+=o.nmvR; PT.nmvAds+=o.nmvAds; PT.cost+=o.cost; PT.o+=o.o; PT.conv+=o.conv; PT.imp+=o.imp; PT.clk+=o.clk;
     PT.n6+=x.n6||0; PT.n7+=x.n7||0; PT.n6k+=x.n6k||0; PT.a6k+=x.a6k||0; PT.a7+=x.a7||0; PT.c6k+=x.c6k||0; PT.c7+=x.c7||0;
     if(bt){ PT.wT+=o.nmv*bt.tacT; PT.wD+=o.nmv; }
-    h+=`<tr class="clk${sel}" onclick="toggleCf('prod',${k})"><td style="max-width:300px;" title="${esc(nm)}">${esc(nm.length>56?nm.slice(0,56)+'…':nm)}</td>`
+    const dkP='p:'+k;
+    h+=`<tr class="clk${sel}" onclick="toggleCf('prod',${k})"><td style="max-width:300px;" title="${esc(nm)}">${dBtn(dkP)}${esc(nm.length>52?nm.slice(0,52)+'…':nm)}</td>`
       +`<td style="${gradAmber(o.nmv,pNmv[0],pNmv[1])}">${fInt(o.nmv)}</td>${momTd(x.n7,x.n6k)}`
       +`<td>${fInt(o.nmvAds)}</td>${momTd(x.a7,x.a6k)}`
       +`<td>${fInt(o.o)}</td>`
@@ -1744,7 +1813,22 @@ function render(){
       +`<td style="${gradMM(ro,pRoas[0],pRoas[1],1)}">${fR(ro)}</td>`
       +`<td style="${bandText(nmvBand(g))}">${g==null?'—':fPct(g,0)}</td>`
       +`<td style="${bandText(tacBand(tacR))}">${fPct(tacR,0)}</td>${actCell(g,tacR)}`
-      +`<td>${fC(o.imp)}</td><td style="${gradMM(ctr_,pCtr[0],pCtr[1],1)}">${fPct(ctr_,2)}</td><td style="${gradMM(cvr_,pCvr[0],pCvr[1],1)}">${fPct(cvr_,2)}</td></tr>`; });
+      +`<td>${fC(o.imp)}</td><td style="${gradMM(ctr_,pCtr[0],pCtr[1],1)}">${fPct(ctr_,2)}</td><td style="${gradMM(cvr_,pCvr[0],pCvr[1],1)}">${fPct(cvr_,2)}</td></tr>`;
+    // ---- cấp 2: Content Angle trong product · cấp 3: Content ID trong angle ----
+    if(DRILL.has(dkP)){
+      const pRow=(lv,label,key,leaf,x)=>`<tr class="dlv${lv}">`+dName(lv,label,key,leaf)
+        +`<td>${fInt(x.nmv)}</td>${eTd(1)}<td>${fInt(x.nmvAds)}</td>${eTd(1)}<td>${fInt(x.o)}</td>`
+        +`<td>${fInt(x.cost)}</td>${eTd(1)}`
+        +`<td>${fPct(x.cost/x.nmvR,1)}</td><td>${fR(x.nmvAds/x.cost)}</td>${eTd(3)}`
+        +`<td>${fC(x.imp)}</td><td>${fPct(x.clk/x.imp,2)}</td><td>${fPct(x.conv/x.clk,2)}</td></tr>`;
+      drillAgg({4:+k},6,'prod').forEach(([ak,ao])=>{
+        const dkPA=dkP+'|a:'+ak;
+        h+=pRow(1,D.angles[ak],dkPA,false,ao);
+        if(DRILL.has(dkPA)){
+          drillAgg({4:+k,6:+ak},7,'prod').forEach(([vk,vo])=>{ h+=pRow(2,D.videos[vk],'',true,vo); });
+        }
+      });
+    } });
   { // Total: tỉ lệ tính lại từ tổng tử/mẫu
     const tac=PT.cost/PT.nmvR, ro=PT.nmvAds/PT.cost, ctr_=PT.clk/PT.imp, cvr_=PT.conv/PT.clk;
     const tgt=PT.wD?PT.wT/PT.wD:null, tacR=(tgt&&isFinite(tac))?tac/tgt:null;
@@ -1786,7 +1870,22 @@ function render(){
   crs.forEach(([k,o])=>{ const ro=o.nmvAds/o.cost, ctr_=o.clk/o.imp, cpo_=o.cost/o.conv;
     const sel=cf.creator===+k?' cfsel':'';
     for(const kk in CT) CT[kk]+=o[kk]||0;
-    h+=`<tr class="clk${sel}" onclick="toggleCf('creator',${k})"><td>${esc(D.creators[k])}</td><td>${fInt(o.rows)}</td><td style="text-align:center;">${starHtml(kocStars(o))}</td><td style="${gradBlue(o.cost,cSpd[0],cSpd[1])}">${fInt(o.cost)}</td><td>${fInt(o.nmvAds)}</td><td style="${gradBlue(o.nmv,cNmv[0],cNmv[1])}">${fInt(o.nmv)}</td><td style="${gradMM(ro,cRoas[0],cRoas[1],1)}">${fR(ro)}</td><td>${fInt(o.conv)}</td><td style="${gradMM(cpo_,cCpo[0],cCpo[1],-1)}">${fInt(cpo_)}</td><td>${fC(o.imp)}</td><td style="${gradMM(ctr_,cCtr[0],cCtr[1],1)}">${fPct(ctr_,2)}</td><td>${fC(o.vv)}</td></tr>`; });
+    const dkC='c:'+k;
+    h+=`<tr class="clk${sel}" onclick="toggleCf('creator',${k})"><td>${dBtn(dkC)}${esc(D.creators[k])}</td><td>${fInt(o.rows)}</td><td style="text-align:center;">${starHtml(kocStars(o))}</td><td style="${gradBlue(o.cost,cSpd[0],cSpd[1])}">${fInt(o.cost)}</td><td>${fInt(o.nmvAds)}</td><td style="${gradBlue(o.nmv,cNmv[0],cNmv[1])}">${fInt(o.nmv)}</td><td style="${gradMM(ro,cRoas[0],cRoas[1],1)}">${fR(ro)}</td><td>${fInt(o.conv)}</td><td style="${gradMM(cpo_,cCpo[0],cCpo[1],-1)}">${fInt(cpo_)}</td><td>${fC(o.imp)}</td><td style="${gradMM(ctr_,cCtr[0],cCtr[1],1)}">${fPct(ctr_,2)}</td><td>${fC(o.vv)}</td></tr>`;
+    // ---- cấp 2: Content Angle của creator · cấp 3: Content ID ----
+    if(DRILL.has(dkC)){
+      const cRow=(lv,label,key,leaf,x)=>`<tr class="dlv${lv}">`+dName(lv,label,key,leaf)
+        +`<td>${x.vid.size}</td>${eTd(1)}<td>${fInt(x.cost)}</td><td>${fInt(x.nmvAds)}</td><td>${fInt(x.nmv)}</td>`
+        +`<td>${fR(x.nmvAds/x.cost)}</td><td>${fInt(x.conv)}</td><td>${x.conv?fInt(x.cost/x.conv):'—'}</td>`
+        +`<td>${fC(x.imp)}</td><td>${fPct(x.clk/x.imp,2)}</td><td>${fC(x.vv)}</td></tr>`;
+      drillAgg({5:+k},6,'creator').forEach(([ak,ao])=>{
+        const dkCA=dkC+'|a:'+ak;
+        h+=cRow(1,D.angles[ak],dkCA,false,ao);
+        if(DRILL.has(dkCA)){
+          drillAgg({5:+k,6:+ak},7,'creator').forEach(([vk,vo])=>{ h+=cRow(2,D.videos[vk],'',true,vo); });
+        }
+      });
+    } });
   h+=`<tr class="tot"><td>Total (${crs.length} creator)</td><td>${fInt(CT.rows)}</td><td style="text-align:center;">—</td><td>${fInt(CT.cost)}</td><td>${fInt(CT.nmvAds)}</td><td>${fInt(CT.nmv)}</td><td>${fR(CT.nmvAds/CT.cost)}</td><td>${fInt(CT.conv)}</td><td>${fInt(CT.cost/CT.conv)}</td><td>${fC(CT.imp)}</td><td>${fPct(CT.clk/CT.imp,2)}</td><td>${fC(CT.vv)}</td></tr>`;
   h+='</tbody>'; $('tblCreator').innerHTML=h;
   $('crCount').textContent=crs.length;
@@ -1806,7 +1905,7 @@ function render(){
 
   // Month summary
   h='<thead><tr><th>Month</th><th>Spend</th><th>NMV Ads</th><th>NMV Total</th><th>%NMV Ads</th><th>Orders</th><th>Conv.</th><th>TACOS</th><th>ROAS</th></tr></thead><tbody>';
-  let M={cost:0,nmvAds:0,nmv:0,o:0,conv:0};
+  let M={cost:0,nmvAds:0,nmv:0,nmvR:0,o:0,conv:0};
   const moList=monthsInData;
   moList.forEach((m,mi)=>{ const rowsM=dateRows(m); const s=sumRows(rowsM,MO);
     for(const kk in M)M[kk]+=s[kk];
