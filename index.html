@@ -234,7 +234,7 @@ th.sactive{background:#0f1424;}
       <div class="hdr-meta">Ads từ <b>Raw_Ads</b> · NMV/Product/Creator/Tier từ <b>Raw_Video Admin</b> (join post_id ↔ content_id) &nbsp;|&nbsp; <span id="hdrRange"></span></div>
     </div>
     <div class="updchip" title="Thời điểm dashboard được build lại từ 2 sheet nguồn. Pipeline tự chạy 10:30 sáng mỗi ngày.">
-      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 15:40</b></span>
+      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 15:44</b></span>
     </div>
   </div>
   <div class="tab-row">
@@ -295,13 +295,49 @@ th.sactive{background:#0f1424;}
     <li><b>%Đạt tiến độ</b> = NMV ÷ target <i>tính đến hôm nay</i> → ≥100% xanh, ±10% trắng, hụt sâu đỏ</li>
   </ul>
 
+  <h4>Thanh bộ lọc — có gì, lọc thế nào</h4>
+  <ul>
+    <li><b>Tháng</b> (góc phải header) &amp; <b>Từ ngày / Đến ngày</b> — chọn khoảng ngày tự do; "Đến ngày" luôn ≥ "Từ ngày"</li>
+    <li>Tab <b>CPD / LDB</b> — xem riêng từng nhóm brand. Đổi tab sẽ <i>xoá</i> cross-filter cũ và nạp lại danh sách Product/Creator của nhóm đó</li>
+    <li><b>Shop · Type of Content · Creator Tier</b> — dropdown thường, chọn 1 giá trị</li>
+    <li><b>Product · Creator</b> — dropdown sắp theo NMV giảm dần (cái to nằm trên), chỉ hiện entity của division đang xem</li>
+    <li><b>Product ID · Content ID</b> — ô dán, <b>nhận nhiều ID cùng lúc</b>: dán thẳng cả cột từ Excel, hoặc ngăn cách bằng dấu phẩy / khoảng trắng. ID sai không phá bộ lọc, chỉ báo riêng "✗ N ID không có" (rê chuột xem ID nào)</li>
+    <li><b>Loại ngày</b> — 🔥 Ngày đôi (ngày trùng tháng 6/6, 7/7… và ±1 ngày) · 📅 Giữa tháng 14–16 · 💰 Ngày lương 24–26 · Ngày thường. Lọc theo <i>tính chất</i> ngày, áp cho mọi bảng &amp; chart, kể cả phần so cùng kỳ tháng trước (2 vế cùng lọc nên so sánh vẫn công bằng)</li>
+  </ul>
+  <div style="padding:4px 8px;background:#fffbeb;border-left:3px solid #f59e0b;margin:4px 0 6px;">
+    <b>Lưu ý:</b> Product ID, dropdown Product và click dòng trong bảng <b>dùng chung một bộ lọc</b> — dùng cái này thì cái kia tự trống. Khi lọc theo <b>Loại ngày / Type / Tier</b>, thẻ %Loading sẽ gắn ⚠ vì target là target cả tháng của cả brand, không chia nhỏ theo các chiều đó được.
+  </div>
+
   <h4>Cách thao tác</h4>
   <ul>
-    <li>Chọn tháng ở góc phải header · tab <b>CPD / LDB</b> xem riêng từng nhóm brand</li>
-    <li><b>Click 1 dòng bất kỳ</b> (Brand/Product/Creator/Angle) → toàn dashboard lọc theo, click lại để bỏ — như Power BI</li>
-    <li>Nút <b>⛶</b> trên mỗi chart/bảng → phóng to toàn màn hình (Esc thoát)</li>
-    <li><b>🔖 Bookmark</b> lưu bộ filter hay dùng, gắn ☆ để tự áp khi mở trang</li>
+    <li><b>Click 1 dòng bất kỳ</b> (Brand/Product/Creator/Angle/Tier) → toàn dashboard lọc theo, click lại để bỏ — như Power BI. Bộ lọc đang bật hiện ở thanh chip 🔎, bấm ✕ để gỡ từng cái</li>
+    <li><b>Click tiêu đề cột</b> để sort tăng/giảm; dòng Total luôn nằm cuối</li>
+    <li>Nút <b>⛶</b> trên mỗi chart/bảng → phóng to toàn màn hình (Esc thoát); phóng to mới hiện nhãn số ở đỉnh/đáy và các ngày quan trọng</li>
+    <li><b>🔖 Bookmark</b> lưu bộ filter hay dùng (gồm cả Loại ngày), gắn ☆ để tự áp khi mở trang</li>
+    <li><b>Clear all slicers</b> (góc phải header) — reset sạch mọi bộ lọc</li>
   </ul>
+
+  <h4>Bảng hoạt động thế nào</h4>
+  <ul>
+    <li><b>Dấu ➕ đầu dòng = mở rộng (drill-down):</b>
+      <br>· <b>Detail by Product</b>: Product → Content Angle → Content ID
+      <br>· <b>Performance by Content Angle</b>: Angle → Content ID
+      <br>· <b>Creator</b>: Creator → Content Angle → Content ID
+      <br>Dòng con thụt lề, nền xám nhạt dần theo cấp. Bấm ➕ <i>không</i> kích hoạt cross-filter. Sort thoải mái — dòng con luôn dính đúng dòng cha.</li>
+    <li><b>Tổng dòng con luôn bằng dòng cha</b>, và dòng con cũng tuân theo mọi bộ lọc đang bật</li>
+    <li><b>Dòng Total</b>: mọi tỉ lệ (TACOS/ROAS/CTR/CVR) được <b>tính lại từ tổng tử số ÷ tổng mẫu số</b>, KHÔNG phải trung bình các dòng — nên đừng ngạc nhiên khi Total không nằm giữa các dòng</li>
+    <li><b>Bảng brand</b> giữ đủ 6 brand kể cả khi cross-filter (kiểu PBI), nhưng các chart theo ngày thì chạy theo brand đang chọn</li>
+  </ul>
+
+  <h4>Ngày "đã có NMV, chưa có Ads"</h4>
+  Cuối kỳ thường có vài ngày team đã đổ NMV nhưng chưa đổ chi phí ads. Dashboard xử lý như sau:
+  <ul>
+    <li><b>NMV vẫn tính đủ</b> ở mọi bảng, chart, KPI, %Loading, run-rate</li>
+    <li><b>TACOS / ROI / %NMV from Ads loại các ngày đó khỏi mẫu số</b> — nếu tính vào, tỉ lệ sẽ thấp giả vì có doanh thu mà chưa có chi phí</li>
+    <li>Trên chart: cột <b>viền đứt nét màu hổ phách</b>, line tỉ lệ <b>ngắt quãng</b> đúng những ngày đó</li>
+    <li>Banner vàng ⏳ đầu trang + dòng "gồm … chưa có Ads" trên thẻ NMV Total cho biết cụ thể ngày nào, bao nhiêu tiền</li>
+  </ul>
+  Khi team đổ Ads cho những ngày đó, số tự khớp lại — không cần chỉnh gì.
 
   <h4>Cách đọc màu &amp; ký hiệu</h4>
   <ul>
@@ -309,7 +345,10 @@ th.sactive{background:#0f1424;}
     <li>Chữ/nền <b style="color:#16a34a;">xanh lá = tốt</b>, <b style="color:#dc2626;">đỏ = xấu</b> theo bản chất chỉ số (TACOS giảm = xanh, CTR tăng = xanh)</li>
     <li><b>Suggest Action 1→4</b>: 1 = Urgent (kiểm soát spend gấp) → 4 = Potential (còn room scale)</li>
     <li><b>⭐ 0.5–5 sao</b> = tiềm năng scale của Angle/KOC (hiệu quả + đà tăng + quy mô); "—" = chưa chạy ads</li>
+    <li><b>▲▼ %MoM</b> = so với <i>cùng kỳ</i> tháng trước (cắt tháng trước đúng tới ngày dữ liệu mới nhất), không phải so cả tháng</li>
+    <li>Chip 🟢 <b>Cập nhật</b> trên header = thời điểm dashboard được build lại lần gần nhất</li>
     <li>Note 📌 dưới bảng brand: nhận xét tự động MTD · Run-rate · trend 7 ngày + gợi ý budget</li>
+    <li>Ô "—" nghĩa là <b>chưa đủ dữ liệu để tính</b> (thường do mẫu số bằng 0), không phải bằng 0</li>
   </ul>
 
   <div style="margin-top:8px;font-family:Consolas,'Courier New',monospace;color:#9ca3af;font-size:8px;border-top:1px dashed #f2cdb4;padding-top:4px;">Góp ý: bấm nút đỏ 💬 FEEDBACK HERE!!! góc phải dưới.</div>
