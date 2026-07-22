@@ -234,7 +234,7 @@ th.sactive{background:#0f1424;}
       <div class="hdr-meta">Ads từ <b>Raw_Ads</b> · NMV/Product/Creator/Tier từ <b>Raw_Video Admin</b> (join post_id ↔ content_id) &nbsp;|&nbsp; <span id="hdrRange"></span></div>
     </div>
     <div class="updchip" title="Thời điểm dashboard được build lại từ 2 sheet nguồn. Pipeline tự chạy 10:30 sáng mỗi ngày.">
-      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 15:08</b></span>
+      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 15:16</b></span>
     </div>
   </div>
   <div class="tab-row">
@@ -252,7 +252,7 @@ th.sactive{background:#0f1424;}
   <div class="fi"><label>Shop</label><select id="fShop" onchange="render()"><option value="All">All</option></select></div>
   <div class="fi"><label>Type of Content</label><select id="fType" onchange="render()"><option value="All">All</option></select></div>
   <div class="fi"><label>Creator Tier</label><select id="fTier" onchange="render()"><option value="All">All</option></select></div>
-  <div class="fi"><label>Content ID</label><input type="text" id="fVid" placeholder="Dán content ID…" oninput="applyVid()" list="vidList"><datalist id="vidList"></datalist></div>
+  <div class="fi"><label>Content ID <span style="font-weight:400;color:#9ca3af;">(dán nhiều ID được)</span></label><input type="text" id="fVid" placeholder="Dán 1 hoặc nhiều content ID, cách nhau bằng dấu phẩy / xuống dòng…" title="Có thể dán cả cột từ Excel: mỗi ID 1 dòng, hoặc ngăn cách bằng dấu phẩy, chấm phẩy, khoảng trắng." oninput="applyVid()" list="vidList"><datalist id="vidList"></datalist></div>
   <span id="vidHint" style="font-size:7.5px;align-self:flex-end;padding-bottom:2px;"></span>
   <div class="fi" style="margin-left:auto;"><label>&nbsp;</label><span style="font-size:8px;color:#9ca3af;font-style:italic;">Click 1 dòng bảng (Product/Creator/Angle/Tier) để <b>cross-filter toàn dashboard</b> · click lại để bỏ</span></div>
 </div>
@@ -542,8 +542,12 @@ const CFDIM={shop:1,type:2,tier:3,prod:4,creator:5,angle:6,vid:7};
 const CFNAME={shop:'Shop',type:'Type',tier:'Tier',prod:'Product',creator:'Creator',angle:'Angle',vid:'Content ID'};
 const cf={};
 function cfVal(d,i){ return ({shop:D.shops,type:D.types,tier:D.tiers,prod:D.products,creator:D.creators,angle:D.angles,vid:D.videos})[d][i]; }
-function cfPass(r,excl){ for(const d in cf){ if(d===excl) continue; if(r[CFDIM[d]]!==cf[d]) return false; } return true; }
+// cf[d] có thể là 1 giá trị hoặc MẢNG giá trị (dùng cho lọc nhiều Content ID cùng lúc)
+function cfPass(r,excl){ for(const d in cf){ if(d===excl) continue;
+  const v=cf[d], x=r[CFDIM[d]];
+  if(Array.isArray(v)){ if(v.indexOf(x)<0) return false; } else if(x!==v) return false; } return true; }
 function toggleCf(dim,val){ if(cf[dim]===val) delete cf[dim]; else cf[dim]=val; render(); }
+function clearDim(dim){ delete cf[dim]; render(); }
 function clearCf(){ for(const k in cf) delete cf[k]; render(); }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function renderCfBar(){
@@ -551,7 +555,13 @@ function renderCfBar(){
   if(!ks.length){ bar.style.display='none'; bar.innerHTML=''; return; }
   bar.style.display='flex';
   bar.innerHTML='<span style="font-weight:700;color:#c2410c;">🔎 Cross-filter đang bật:</span>'
-    + ks.map(k=>`<span class="cfchip" onclick="toggleCf('${k}',${cf[k]})" title="Bỏ lọc này">${CFNAME[k]}: ${esc(cfVal(k,cf[k]))} <span class="x">✕</span></span>`).join('')
+    + ks.map(k=>{
+        if(Array.isArray(cf[k])){
+          const names=cf[k].map(i=>cfVal(k,i));
+          return `<span class="cfchip" onclick="clearDim('${k}')" title="Bỏ lọc này — đang lọc:\n${esc(names.join('\n'))}">${CFNAME[k]}: <b>${cf[k].length}</b> giá trị <span class="x">✕</span></span>`;
+        }
+        return `<span class="cfchip" onclick="toggleCf('${k}',${cf[k]})" title="Bỏ lọc này">${CFNAME[k]}: ${esc(cfVal(k,cf[k]))} <span class="x">✕</span></span>`;
+      }).join('')
     + '<span class="cfclear" onclick="clearCf()">Xóa tất cả</span>';
 }
 // cube metrics(13): [o,gmv,nmv,cost,conv,imp,clk,vv,nmvAds,gmvAds,rows,v6,nmvR]
@@ -678,24 +688,50 @@ function applyCustom(){
 
 // ---- Content ID filter ----
 const vidIdx={}; D.videos.forEach((v,i)=>{ vidIdx[v]=i; });
+// Content ID: cho phép dán NHIỀU ID cùng lúc — ngăn cách bằng dấu phẩy, chấm phẩy, xuống dòng, tab hoặc khoảng trắng
+function vidParse(s){ return (s||'').split(/[\s,;|]+/).map(x=>x.trim()).filter(x=>x.length); }
 function applyVid(){
-  const v=($('fVid').value||'').trim();
+  const raw=$('fVid').value||'';
+  const toks=vidParse(raw);
   const dl=$('vidList');
-  dl.innerHTML = v.length>=4 ? D.videos.filter(x=>x.indexOf(v)>=0).slice(0,20).map(x=>'<option value="'+x+'">').join('') : '';
-  if(!v){ delete cf.vid; $('vidHint').textContent=''; render(); return; }
-  if(vidIdx[v]!==undefined){ cf.vid=vidIdx[v]; $('vidHint').innerHTML='<span style="color:#22c55e;font-weight:700;">✓ đã lọc</span>'; }
-  else { delete cf.vid; $('vidHint').innerHTML='<span style="color:#ef4444;font-weight:700;">✗ không có ID này</span>'; }
+  const last=toks.length?toks[toks.length-1]:'';
+  dl.innerHTML = (toks.length<=1 && last.length>=4) ? D.videos.filter(x=>x.indexOf(last)>=0).slice(0,20).map(x=>'<option value="'+x+'">').join('') : '';
+  if(!toks.length){ delete cf.vid; $('vidHint').textContent=''; render(); return; }
+  const ok=[], bad=[];
+  toks.forEach(t=>{ if(vidIdx[t]!==undefined) ok.push(vidIdx[t]); else bad.push(t); });
+  const uniq=[...new Set(ok)];
+  if(uniq.length){ cf.vid = uniq.length===1 ? uniq[0] : uniq; }
+  else delete cf.vid;
+  let hint='';
+  if(uniq.length) hint+='<span style="color:#22c55e;font-weight:700;">✓ lọc '+uniq.length+' ID</span>';
+  if(bad.length) hint+=(hint?' · ':'')+'<span style="color:#ef4444;font-weight:700;" title="'+esc(bad.join(', '))+'">✗ '+bad.length+' ID không có</span>';
+  $('vidHint').innerHTML=hint;
   render();
 }
+// Dán cả cột từ Excel: <input> 1 dòng sẽ NUỐT ký tự xuống dòng làm 2 ID dính nhau
+// -> tự tách rồi nối lại bằng ', ' trước khi ghi vào ô.
+$('fVid').addEventListener('paste',function(e){
+  const t=((e.clipboardData||window.clipboardData).getData('text')||'');
+  if(!/[\r\n\t]/.test(t)) return;                 // dán 1 dòng thì để trình duyệt xử lý bình thường
+  e.preventDefault();
+  const el=$('fVid'), cur=(el.value||'').trim();
+  const merged=vidParse(cur).concat(vidParse(t));
+  el.value=[...new Set(merged)].join(', ');
+  applyVid();
+});
 function syncVidInput(){
   const cur=($('fVid').value||'').trim();
+  const toks=vidParse(cur);
   if(cf.vid===undefined){
-    // chỉ xoá khi ô đang giữ 1 ID hợp lệ mà filter vừa bị gỡ (chip ✕ / clear).
+    // chỉ xoá khi ô đang giữ toàn ID hợp lệ mà filter vừa bị gỡ (chip ✕ / clear).
     // KHÔNG xoá khi chuỗi chưa khớp — người dùng đang gõ dở.
-    if(cur && vidIdx[cur]!==undefined){ $('fVid').value=''; $('vidHint').textContent=''; }
+    if(toks.length && toks.every(t=>vidIdx[t]!==undefined)){ $('fVid').value=''; $('vidHint').textContent=''; }
   } else {
-    const s=D.videos[cf.vid];
-    if(cur!==s){ $('fVid').value=s; $('vidHint').innerHTML='<span style="color:#22c55e;font-weight:700;">✓ đã lọc</span>'; }
+    const list=Array.isArray(cf.vid)?cf.vid:[cf.vid];
+    const s=list.map(i=>D.videos[i]).join(', ');
+    const curSet=toks.filter(t=>vidIdx[t]!==undefined).map(t=>vidIdx[t]).join(',');
+    if(curSet!==list.join(',')){ $('fVid').value=s;
+      $('vidHint').innerHTML='<span style="color:#22c55e;font-weight:700;">✓ lọc '+list.length+' ID</span>'; }
   }
 }
 
