@@ -234,7 +234,7 @@ th.sactive{background:#0f1424;}
       <div class="hdr-meta">Ads từ <b>Raw_Ads</b> · NMV/Product/Creator/Tier từ <b>Raw_Video Admin</b> (join post_id ↔ content_id) &nbsp;|&nbsp; <span id="hdrRange"></span></div>
     </div>
     <div class="updchip" title="Thời điểm dashboard được build lại từ 2 sheet nguồn. Pipeline tự chạy 10:30 sáng mỗi ngày.">
-      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 15:34</b></span>
+      <span class="dot"></span><span>Cập nhật: <b>22/07/2026 15:40</b></span>
     </div>
   </div>
   <div class="tab-row">
@@ -930,12 +930,21 @@ function sortTable(id){
   const table=$(id); const st=sortState[id]; if(!table||!st)return;
   const tb=table.querySelector('tbody'); const all=[...tb.querySelectorAll('tr')];
   const tot=all.filter(r=>r.classList.contains('tot'));
-  const data=all.filter(r=>!r.classList.contains('tot'));
-  data.sort((a,b)=>{ const va=parseCell(a.cells[st.col]),vb=parseCell(b.cells[st.col]);
+  // Gom dòng con drill-down vào CỤM của dòng cha: sort chỉ đổi thứ tự các cụm,
+  // dòng con luôn dính ngay dưới đúng cha (nếu sort rời sẽ nhảy sang product khác).
+  const groups=[];
+  all.forEach(r=>{
+    if(r.classList.contains('tot')) return;
+    if(r.classList.contains('dlv1')||r.classList.contains('dlv2')){
+      if(groups.length) groups[groups.length-1].kids.push(r); else groups.push({head:r,kids:[]});
+    } else groups.push({head:r,kids:[]});
+  });
+  groups.sort((a,b)=>{ const va=parseCell(a.head.cells[st.col]),vb=parseCell(b.head.cells[st.col]);
     if(va.n!=null&&vb.n!=null) return (va.n-vb.n)*st.dir;
     if(va.n!=null) return -1; if(vb.n!=null) return 1;   // blanks last
     return va.s.localeCompare(vb.s)*st.dir; });
-  data.forEach(r=>tb.appendChild(r)); tot.forEach(r=>tb.appendChild(r));
+  groups.forEach(g=>{ tb.appendChild(g.head); g.kids.forEach(k=>tb.appendChild(k)); });
+  tot.forEach(r=>tb.appendChild(r));
   table.querySelectorAll('thead th').forEach((th,ci)=>{ const o=th.querySelector('.sarr'); if(o)o.remove(); th.classList.remove('sactive');
     if(ci===st.col){ th.classList.add('sactive'); const sp=document.createElement('span'); sp.className='sarr'; sp.textContent=st.dir<0?'▼':'▲'; th.appendChild(sp); } });
 }
@@ -943,9 +952,7 @@ function makeSortable(id){
   const table=$(id); if(!table)return;
   table.querySelectorAll('thead th').forEach((th,ci)=>{ th.onclick=()=>{
     const st=sortState[id]; const dir=(st&&st.col===ci)?-st.dir:-1; sortState[id]={col:ci,dir};
-    // đang mở drill-down mà sort thì dòng con sẽ rời khỏi dòng cha -> thu gọn hết rồi mới sort
-    if(DRILL.size && table.querySelector('tr.dlv1')){ DRILL.clear(); render(); return; }
-    sortTable(id);
+    sortTable(id);   // sortTable giữ nguyên cụm cha-con nên drill-down vẫn mở được khi sort
   };});
   if(sortState[id]) sortTable(id);
 }
