@@ -234,7 +234,7 @@ th.sactive{background:#0f1424;}
       <div class="hdr-meta">Ads từ <b>Raw_Ads</b> · NMV/Product/Creator/Tier từ <b>Raw_Video Admin</b> (join post_id ↔ content_id) &nbsp;|&nbsp; <span id="hdrRange"></span></div>
     </div>
     <div class="updchip" title="Thời điểm dashboard được build lại từ 2 sheet nguồn. Pipeline tự chạy 10:30 sáng mỗi ngày.">
-      <span class="dot"></span><span>Cập nhật: <b>23/07/2026 10:31</b></span>
+      <span class="dot"></span><span>Cập nhật: <b>23/07/2026 10:46</b></span>
     </div>
   </div>
   <div class="tab-row">
@@ -1144,8 +1144,8 @@ function selMonths(){ return (mSel===LM_M)?[LM_M]:(mSel===TM_M)?[TM_M]:[LM_M,TM_
 function brandActualByMonth(){
   const m={};
   V.byDateFull.forEach(r=>{ if(!inSel(r[0])) return;
-    const mm=r[0].slice(0,7); if(!m[r[1]])m[r[1]]={}; if(!m[r[1]][mm])m[r[1]][mm]={nmv:0,cost:0};
-    m[r[1]][mm].nmv+=r[6]; m[r[1]][mm].cost+=r[7]; });
+    const mm=r[0].slice(0,7); if(!m[r[1]])m[r[1]]={}; if(!m[r[1]][mm])m[r[1]][mm]={nmv:0,cost:0,nmvR:0};
+    m[r[1]][mm].nmv+=r[6]; m[r[1]][mm].cost+=r[7]; m[r[1]][mm].nmvR+=r[MO+IDX.nmvR]; });
   return m;
 }
 function buildTargetTable(tblId,noteId,mode){
@@ -1160,31 +1160,32 @@ function buildTargetTable(tblId,noteId,mode){
     : ('Lũy kế '+lbl+' (đến '+ddmm(maxDate)+') · %Đạt so với target CẢ THÁNG · Pace kỳ '+(pace*100).toFixed(1)+'% ('+elapsed+'/'+total+' ngày) · %Đạt NMV tô màu theo pace');
   const tN = isPr ? (mSel==='custom' ? ('Target cho '+elapsed+' ngày đã chọn') : ('Target đến '+ddmm(maxDate))) : 'Target (cả tháng)';
   let h='<thead><tr><th>Brand</th><th>PIC</th><th>NMV '+tN+'</th><th>NMV Actual</th><th>%Đạt NMV</th><th>Ads Cost '+tN+'</th><th>Ads Cost Actual</th><th>%Đạt Ads</th><th>TACOS Target</th><th>TACOS Actual</th><th>%Đạt TACOS</th>'+(isPr?'<th>TACOS vs Target</th><th style="text-align:center;">Suggest Action</th>':'')+'</tr></thead><tbody>';
-  let T={nmvT:0,nmvA:0,adsT:0,adsA:0};
+  let T={nmvT:0,nmvA:0,adsT:0,adsA:0,nmvAR:0};
   let noTgt=0;
   brandTargets.filter(b=>b.shop>=0 && divOk(b.shop)).forEach(b=>{
-    let nmvT=0,adsT=0,nmvA=0,adsA=0;
+    let nmvT=0,adsT=0,nmvA=0,adsA=0,nmvAR=0;
     months.forEach(m=>{
       // pro-rate TARGET theo số ngày trong bộ lọc (VD tới ngày 10 của tháng 30 ngày -> target × 10/30). KHÔNG dự phóng actual.
       const pr = isPr ? (tgtDaysIn(m)/monthDays[m]) : 1;
       if(b.t[m]){ nmvT+=b.t[m].nmvT*pr; adsT+=b.t[m].adsT*pr; }
-      const a=(am[b.shop]&&am[b.shop][m])?am[b.shop][m]:{nmv:0,cost:0};
-      nmvA+=a.nmv; adsA+=a.cost; });
+      const a=(am[b.shop]&&am[b.shop][m])?am[b.shop][m]:{nmv:0,cost:0,nmvR:0};
+      nmvA+=a.nmv; adsA+=a.cost; nmvAR+=a.nmvR; });
     // brand chưa được nhập target -> hiện "chờ target", KHÔNG cộng vào Total (tránh làm sai %Đạt tổng)
     if(!nmvT){
       noTgt++;
       const nCol=isPr?13:11;
       h+=`<tr style="opacity:.75;"><td>${brandLogo(b.shop)}${D.shops[b.shop]}</td><td>${picChip(b)}</td>`
-        +`<td colspan="${nCol-2}" style="text-align:left;color:#b45309;background:#fffbeb;">⏳ Chưa nhập target — Actual: NMV <b>${fInt(nmvA)}</b> · Ads Cost <b>${fInt(adsA)}</b> · TACOS <b>${fPct(adsA/nmvA,2)}</b></td></tr>`;
+        +`<td colspan="${nCol-2}" style="text-align:left;color:#b45309;background:#fffbeb;">⏳ Chưa nhập target — Actual: NMV <b>${fInt(nmvA)}</b> · Ads Cost <b>${fInt(adsA)}</b> · TACOS <b>${fPct(adsA/nmvAR,2)}</b></td></tr>`;
       return;
     }
-    T.nmvT+=nmvT;T.adsT+=adsT;T.nmvA+=nmvA;T.adsA+=adsA;
-    const pn=nmvA/nmvT, pa=adsA/adsT, tacT=adsT/nmvT, tacA=adsA/nmvA, ptac=tacT/tacA;
+    T.nmvT+=nmvT;T.adsT+=adsT;T.nmvA+=nmvA;T.adsA+=adsA;T.nmvAR+=nmvAR;
+    // TACOS Actual dùng nmvR (NMV của ngày ĐÃ có Ads) — loại ngày chưa có Ads để không bị pha loãng, khớp KPI
+    const pn=nmvA/nmvT, pa=adsA/adsT, tacT=adsT/nmvT, tacA=adsA/nmvAR, ptac=tacT/tacA;
     const ref=(mode==='mtd')?pace:1, tacR=tacA/tacT;
     h+=`<tr><td>${brandLogo(b.shop)}${D.shops[b.shop]}</td><td>${picChip(b)}</td><td>${fInt(nmvT)}</td><td>${fInt(nmvA)}</td><td style="${gradAround(pn,ref,0.10)}">${fPct(pn,1)}</td><td>${fInt(adsT)}</td><td>${fInt(adsA)}</td><td style="${gradAround(pa,ref,0.10)}">${fPct(pa,1)}</td><td>${fPct(tacT,1)}</td><td style="${(isFinite(tacA)&&isFinite(tacT))?(tacA>tacT?'background:#fee2e2;color:#dc2626;font-weight:700;':'color:#16a34a;font-weight:700;'):''}">${fPct(tacA,1)}</td><td style="${gradAround(ptac,1,0.10)}">${fPct(ptac,1)}</td>`
       + (isPr?`<td style="${bandStyle(tacBand(tacR))}">${fPct(tacR,1)}</td>`+actCell(pn,tacR):'') + `</tr>`;
   });
-  const pnT=T.nmvA/T.nmvT, paT=T.adsA/T.adsT, tacTT=T.adsT/T.nmvT, tacAT=T.adsA/T.nmvA, ptacT=tacTT/tacAT;
+  const pnT=T.nmvA/T.nmvT, paT=T.adsA/T.adsT, tacTT=T.adsT/T.nmvT, tacAT=T.adsA/T.nmvAR, ptacT=tacTT/tacAT;
   const refT=(mode==='mtd')?pace:1, tacRT=tacAT/tacTT;
   h+=`<tr class="tot"><td>Total</td><td>—</td><td>${fInt(T.nmvT)}</td><td>${fInt(T.nmvA)}</td><td style="${gradAround(pnT,refT,0.10)}">${fPct(pnT,1)}</td><td>${fInt(T.adsT)}</td><td>${fInt(T.adsA)}</td><td style="${gradAround(paT,refT,0.10)}">${fPct(paT,1)}</td><td>${fPct(tacTT,1)}</td><td>${fPct(tacAT,1)}</td><td style="${gradAround(ptacT,1,0.10)}">${fPct(ptacT,1)}</td>`
     + (isPr?`<td style="${bandStyle(tacBand(tacRT))}">${fPct(tacRT,1)}</td>`+actCell(pnT,tacRT):'') + `</tr></tbody>`;
